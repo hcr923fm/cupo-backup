@@ -62,5 +62,6 @@ target/
 /.gitignore
 /backup_dst
 /.idea
+/test_src
 
 # Created by .ignore support plugin (hsz.mobi)
