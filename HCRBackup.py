@@ -6,7 +6,9 @@ import tempfile
 import argparse
 import botocore.utils
 import datetime
+import pymongo
 import backupmongo
+
 
 
 # Only the *files* in a given directory are archived, not the subdirectories.
@@ -74,6 +76,14 @@ def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id):
              "--checksum", archive_treehash, "--body", archive_path], stderr=devnull)
 
         aws_cli_op = aws_cli_op.replace("\r\n", "")
+
+        # Returned fields from upload:
+        # location -> (string)
+        # The relative URI path of the newly added archive resource.
+        # checksum -> (string)
+        # The checksum of the archive computed by Amazon Glacier.
+        # archiveId -> (string)
+        # The ID of the archive. This value is also included as part of the location.
 
         aws_params = json.loads(aws_cli_op)
         return aws_params
@@ -151,20 +161,17 @@ if __name__ == "__main__":
             backup_subdir_abs_filename = os.path.join(root_dir, subdir_to_backup) + ".7z"
             backup_subdir_rel_filename = subdir_to_backup + ".7z"
 
-
-
             # Find most recent version of this file in Glacier
-            c = conn.execute("SELECT * FROM archives WHERE path=? ORDER BY timestampUploaded DESC",
-                             (backup_subdir_rel_filename,))
-            row = c.fetchone()
-            del c
+            most_recent_version = pymongo.collection.Collection.find_one(
+                {"path": backup_subdir_rel_filename, "to_delete": False},
+                sort=[('uploaded_time', pymongo.DESCENDING)])
 
-            if row:
+            if most_recent_version:
                 print "\tFound path info in local database"
-                hash_remote = row['treehash']
-                size_remote = row['size']
+                hash_remote = most_recent_version['treehash']
+                size_remote = most_recent_version['size']
 
-            else:
+            most_recent_version:
                 print "\tPath does not exist in local database"
                 hash_remote = size_remote = None
 
@@ -178,17 +185,17 @@ if __name__ == "__main__":
                 if upload_status:
                     print "\tUploaded", tmp_archive_fullpath, "to", aws_vault_name
 
+                    # Get vault arn:
+                    aws_vault_arn = pymongo.get_vault_by_name(aws_vault_name)["arn"]
+
                     # Store the info about the newly uploaded file in the database
-                    with conn:
-                        try:
-                            conn.execute("""INSERT INTO archives VALUES (?,?,?,?,?,?,?,?)""",
-                                         (backup_subdir_rel_filename, aws_vault_name, archive_hash, size_arch,
-                                          datetime.datetime.now(), upload_status['archiveId'],
-                                          upload_status['location'],
-                                          0))
-                        except sqlite3.Error, e:
-                            print "\tERROR: Could not update archives records:"
-                            print e.args
+                    backupmongo.create_archive_entry(db,
+                                                     backup_subdir_rel_filename,
+                                                     aws_vault_arn
+                                                     upload_status["archiveId"],
+                                                     archive_hash,
+                                                     size_arch,
+                                                     upload_status["location"])
                 else:
                     print "oh"
             else:
@@ -203,7 +210,7 @@ if __name__ == "__main__":
     # TODO: Mark old versions of archives for deletion
 
     # Find archives older than three months
-    three_months_ago = datetime.datetime.now() - datetime.timedelta(seconds=13)
+    three_months_ago = datetime.datetime.now() - datetime.timedelta()
     with conn:
         c = conn.execute("""SELECT path, archiveID, timestampUploaded FROM archives
                          WHERE timestampUploaded < ?""", (three_months_ago,))

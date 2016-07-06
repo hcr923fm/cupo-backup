@@ -100,6 +100,12 @@ def create_archive_entry(db, archived_dir_path, vault_arn, aws_archive_id,
                                        {'$push': {'versions':doc_version}},
                                        upsert=True,)
 
+def get_vault_by_name(db, vault_name):
+    return db['archives'].find_one({"name": vault_name})
+
+def get_vault_by_arn(db, vault_arn):
+    return db['archives'].find_one({"arn": vault_arn})
+
 def connect(database_name, host="localhost", port=27017):
     mongodb_uri = "mongo://{host}:{port}".format(host=host, port=port)
     client = pymongo.MongoClient(mongodb_uri)
