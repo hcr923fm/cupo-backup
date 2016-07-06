@@ -106,6 +106,11 @@ def get_vault_by_name(db, vault_name):
 def get_vault_by_arn(db, vault_arn):
     return db['archives'].find_one({"arn": vault_arn})
 
+def get_most_recent_version_of_archive(db, path):
+    return db["archives"]find_one(
+        {"path": path, "to_delete": False},
+        sort=[('uploaded_time', pymongo.DESCENDING)])
+
 def connect(database_name, host="localhost", port=27017):
     mongodb_uri = "mongo://{host}:{port}".format(host=host, port=port)
     client = pymongo.MongoClient(mongodb_uri)

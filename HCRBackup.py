@@ -6,9 +6,7 @@ import tempfile
 import argparse
 import botocore.utils
 import datetime
-import pymongo
 import backupmongo
-
 
 
 # Only the *files* in a given directory are archived, not the subdirectories.
@@ -162,9 +160,7 @@ if __name__ == "__main__":
             backup_subdir_rel_filename = subdir_to_backup + ".7z"
 
             # Find most recent version of this file in Glacier
-            most_recent_version = pymongo.collection.Collection.find_one(
-                {"path": backup_subdir_rel_filename, "to_delete": False},
-                sort=[('uploaded_time', pymongo.DESCENDING)])
+            most_recent_version = backupmongo.get_most_recent_version_of_archive(backup_subdir_rel_filename)
 
             if most_recent_version:
                 print "\tFound path info in local database"
@@ -186,7 +182,7 @@ if __name__ == "__main__":
                     print "\tUploaded", tmp_archive_fullpath, "to", aws_vault_name
 
                     # Get vault arn:
-                    aws_vault_arn = pymongo.get_vault_by_name(aws_vault_name)["arn"]
+                    aws_vault_arn = backupmongo.get_vault_by_name(aws_vault_name)["arn"]
 
                     # Store the info about the newly uploaded file in the database
                     backupmongo.create_archive_entry(db,
@@ -209,20 +205,19 @@ if __name__ == "__main__":
 
     # TODO: Mark old versions of archives for deletion
 
-    # Find archives older than three months
+    # Find archives older than three months, with three more recent versions
+    # available
     three_months_ago = datetime.datetime.now() - datetime.timedelta()
-    with conn:
-        c = conn.execute("""SELECT path, archiveID, timestampUploaded FROM archives
-                         WHERE timestampUploaded < ?""", (three_months_ago,))
-        old_archives = c.fetchall()
-        c.close()
-
-        print old_archives
-
-
+    # with conn:
+    #     c = conn.execute("""SELECT path, archiveID, timestampUploaded FROM archives
+    #                      WHERE timestampUploaded < ?""", (three_months_ago,))
+    #     old_archives = c.fetchall()
+    #     c.close()
+    #
+    #     print old_archives
 
 
     # TODO: Delete old versions of archives
 
     # Finished with the database
-    conn.close()
+    db_client.close()
