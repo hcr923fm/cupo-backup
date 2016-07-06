@@ -9,7 +9,8 @@ def create_backup_database(database_path, overwrite_existing=False):
     """
     Creates a SQLite database at *database_path* that is ready to be used as backup tracking for this software.
     :param database_path The path to the database file to create.
-    :param overwrite_existing   If a file already exists at *database_path*, should it be overwritten?
+    :param overwrite_existing
+    If a file already exists at *database_path*, should it be overwritten?
     """
     if os.path.exists(database_path):
         if overwrite_existing:

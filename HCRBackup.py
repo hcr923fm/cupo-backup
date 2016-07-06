@@ -151,8 +151,7 @@ if __name__ == "__main__":
             backup_subdir_abs_filename = os.path.join(root_dir, subdir_to_backup) + ".7z"
             backup_subdir_rel_filename = subdir_to_backup + ".7z"
 
-            # Compare it against the local copy of the Glacier version of the archive
-            size_arch = os.stat(tmp_archive_fullpath).st_size
+
 
             # Find most recent version of this file in Glacier
             c = conn.execute("SELECT * FROM archives WHERE path=? ORDER BY timestampUploaded DESC",
@@ -161,12 +160,16 @@ if __name__ == "__main__":
             del c
 
             if row:
+                print "\tFound path info in local database"
                 hash_remote = row['treehash']
                 size_remote = row['size']
-                print "\tFound path info in local database"
+
             else:
                 print "\tPath does not exist in local database"
                 hash_remote = size_remote = None
+
+            # Compare it against the local copy of the Glacier version of the archive
+            size_arch = os.stat(tmp_archive_fullpath).st_size
 
             # If the hashes are the same - don't upload the archive; it already exists
             if not compare_files(size_arch, archive_hash, size_remote, hash_remote):
