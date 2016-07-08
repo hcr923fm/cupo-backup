@@ -193,31 +193,31 @@ if __name__ == "__main__":
                                                      size_arch,
                                                      upload_status["location"])
                 else:
-                    print "oh"
+                    print "\tFailed to upload", backup_subdir_rel_filename
             else:
                 print "\tNot uploaded", backup_subdir_rel_filename, "- the file is already uploaded"
 
             # Delete the temporary archive
             os.remove(tmp_archive_fullpath)
 
+            # TODO: Mark old versions of archives for deletion
+
+            # Find archives older than three months, with three more recent versions
+            # available
+            # This could only be the case when we've uploaded a new version of an archive, thereby
+            # making an old version irrelevant - so we only need to look for archives with this path.
+            three_months_ago = datetime.datetime.now() - datetime.timedelta()
+
+            versions_docs = db["archives"].find({"path": backup_subdir_rel_filename,
+                                                 "vault_arn": aws_vault_arn})
+
         # Delete the temporary directory.
         os.rmdir(temp_dir)
 
-    # TODO: Mark old versions of archives for deletion
-
-    # Find archives older than three months, with three more recent versions
-    # available
-    three_months_ago = datetime.datetime.now() - datetime.timedelta()
-    # with conn:
-    #     c = conn.execute("""SELECT path, archiveID, timestampUploaded FROM archives
-    #                      WHERE timestampUploaded < ?""", (three_months_ago,))
-    #     old_archives = c.fetchall()
-    #     c.close()
-    #
-    #     print old_archives
 
 
-    # TODO: Delete old versions of archives
+    # TODO: Find archives marked for deletion, and delete them
+
 
     # Finished with the database
     db_client.close()
