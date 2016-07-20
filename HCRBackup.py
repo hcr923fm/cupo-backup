@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 import argparse
 import botocore.utils
-import datetime
+import datetime, time
 import backupmongo
 
 
@@ -206,10 +206,9 @@ if __name__ == "__main__":
             # available
             # This could only be the case when we've uploaded a new version of an archive, thereby
             # making an old version irrelevant - so we only need to look for archives with this path.
-            three_months_ago = datetime.datetime.now() - datetime.timedelta()
-
-            versions_docs = db["archives"].find({"path": backup_subdir_rel_filename,
-                                                 "vault_arn": aws_vault_arn})
+            old_archives = backupmongo.get_old_archives(db, backup_subdir_rel_filename, aws_vault_arn)
+            for arch in old_archives:
+                backupmongo.mark_archive_for_deletion(db, arch["_id"])
 
         # Delete the temporary directory.
         os.rmdir(temp_dir)
