@@ -85,10 +85,12 @@ def get_old_archives(db, archived_dir_path, vault_arn):
     deadline_dt = datetime.datetime.utcnow() - datetime.timedelta(weeks=12)
     deadline_ts = time.mktime(deadline_dt.timetuple())
     cursor = db["archives"].find({"to_delete":0,
-                             "uploaded_time":
-                                {"$lt": deadline_ts},
-                            sort=[("uploaded_time", pymongo.DESCENDING)],
-                            skip=3)
+                                  "path": archived_dir_path,
+                                  "uploaded_time":
+                                  {"$lt": deadline_ts}
+                                  },
+                                 sort=[("uploaded_time", pymongo.DESCENDING)],
+                                 skip=3)
 
      old_archives = []
      for arch in cursor:
@@ -103,6 +105,17 @@ def mark_archive_for_deletion(db, archive_id):
                                            "to_delete": 1
                                            }
                                         })
+
+def get_archives_to_delete(db):
+    cursor = db["archives"].find({"to_delete": 1})
+    redundant_archives = []
+    for arch in cursor:
+        redundant_archives.append()
+
+    return redundant_archives
+
+def delete_archive_document(db, archive_id):
+    db["archives"].find_one_and_delete({"_id": archive_id})
 
 def get_vault_by_name(db, vault_name):
     return db['archives'].find_one({"name": vault_name})

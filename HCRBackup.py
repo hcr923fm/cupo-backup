@@ -92,6 +92,19 @@ def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id):
         print e.cmd
         print e.output
 
+def delete_archive(archive_id, aws_vault, aws_account_id):
+    devnull = open(os.devnull, "w")
+    aws_cli_path = os.path.join("C:\\", "Program Files", "Amazon", "AWSCLI", "aws.exe")
+    try:
+        aws_cli_op = subprocess.check_output(
+            [aws_cli_path, "glacier", "delete-archive", "--account-id", aws_account_id,
+             "--archive-id", archive_id], stderr=devnull)
+    except subprocess.CalledProcessError, e:
+        print "Deletion failed with error", e.returncode
+        print e.message
+        print e.cmd
+        print e.output
+
 
 def compare_files(length_a, hash_a, length_b, hash_b):
     return (length_a == length_b) & (hash_a == hash_b)
@@ -213,9 +226,12 @@ if __name__ == "__main__":
         # Delete the temporary directory.
         os.rmdir(temp_dir)
 
-
-
-    # TODO: Find archives marked for deletion, and delete them
+    # Find and delete old archives
+    redundant_archives = get_archives_to_delete(db)
+    for arch in redundant_archives:
+        print "Deleting %s from AWS..."
+        delete_archive(arch["_id"], aws_vault_name, aws_account_id)
+        pymongo.delete_archive_document(db,arch["_id"])
 
 
     # Finished with the database
