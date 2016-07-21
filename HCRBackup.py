@@ -1,5 +1,4 @@
-import os
-import os.path
+import os, os.path
 import json
 import subprocess
 import tempfile
@@ -29,15 +28,15 @@ def archive_directory(top_dir, subdir, tmpdir):
             files.append(fpath)
 
     if files:  # No point creating empty zips!
-        sevenz_loc = os.path.join("C:\\", "Program Files", "7-Zip", "7z.exe")
+        # sevenz_loc = os.path.join("C:\\", "Program Files", "7-Zip", "7z.exe")
         archive_file_path = os.path.join(tmpdir, os.path.basename(subdir)) + ".7z"
 
         print "Archiving", subdir, "to", archive_file_path
         try:
             devnull = open(os.devnull, "w")
             subprocess.check_call(
-                [sevenz_loc, "a", "-t7z", archive_file_path, os.path.join(full_backup_path, "*"),
-                 "-m0=BZip2", "-y", "-aoa", "-xr-!*\\"], stdout=devnull, stderr=devnull)
+                ["7z", "a", "-t7z", archive_file_path, os.path.join(full_backup_path, "*"),
+                 "-m0=BZip2", "-y", "-aoa", "-xr-!*/"], stdout=devnull, stderr=devnull)
             devnull.close()
             return archive_file_path
         except subprocess.CalledProcessError, e:
@@ -67,10 +66,9 @@ def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id):
 
     devnull = open(os.devnull, "w")
 
-    aws_cli_path = os.path.join("C:\\", "Program Files", "Amazon", "AWSCLI", "aws.exe")
     try:
         aws_cli_op = subprocess.check_output(
-            [aws_cli_path, "glacier", "upload-archive", "--vault-name", aws_vault, "--account-id", aws_account_id,
+            ["aws" "glacier", "upload-archive", "--vault-name", aws_vault, "--account-id", aws_account_id,
              "--checksum", archive_treehash, "--body", archive_path], stderr=devnull)
 
         aws_cli_op = aws_cli_op.replace("\r\n", "")
@@ -97,7 +95,7 @@ def delete_archive(archive_id, aws_vault, aws_account_id):
     aws_cli_path = os.path.join("C:\\", "Program Files", "Amazon", "AWSCLI", "aws.exe")
     try:
         aws_cli_op = subprocess.check_output(
-            [aws_cli_path, "glacier", "delete-archive", "--account-id", aws_account_id,
+            ["aws", "glacier", "delete-archive", "--account-id", aws_account_id,
              "--archive-id", archive_id], stderr=devnull)
     except subprocess.CalledProcessError, e:
         print "Deletion failed with error", e.returncode
@@ -154,7 +152,7 @@ if __name__ == "__main__":
         print "Backing up %s to %s using AWS Account ID %s" % (root_dir, aws_vault_name, aws_account_id)
 
         subdirs_to_backup = list_dirs(root_dir)  # List of subtrees, relative to root_dir
-        subdirs_to_backup.append("")  # Dammit I will get this working - get the root directory contents to be zipped
+        subdirs_to_backup.append("")  # TODO: Dammit I will get this working - get the root directory contents to be zipped
 
         for subdir_to_backup in subdirs_to_backup:
 
@@ -212,8 +210,6 @@ if __name__ == "__main__":
 
             # Delete the temporary archive
             os.remove(tmp_archive_fullpath)
-
-            # TODO: Mark old versions of archives for deletion
 
             # Find archives older than three months, with three more recent versions
             # available
