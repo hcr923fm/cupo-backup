@@ -177,6 +177,8 @@ if __name__ == "__main__":
 
     args = arg_parser.parse_args()
 
+    logging.basicConfig(filename="/var/log/HCRBackup", level=logging.INFO)
+
     # Top of directory to backup
     root_dir = args.directory
     if not os.path.exists(root_dir):
