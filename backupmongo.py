@@ -92,11 +92,11 @@ def get_old_archives(db, archived_dir_path, vault_arn):
                                  sort=[("uploaded_time", pymongo.DESCENDING)],
                                  skip=3)
 
-     old_archives = []
-     for arch in cursor:
-         old_archives.append(arch)
+    old_archives = []
+    for arch in cursor:
+        old_archives.append(arch)
 
-     return old_archives
+    return old_archives
 
 def mark_archive_for_deletion(db, archive_id):
     db["archives"].find_one_and_update({"_id": archive_id},

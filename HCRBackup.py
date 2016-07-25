@@ -224,7 +224,7 @@ if __name__ == "__main__":
                 hash_remote = most_recent_version['treehash']
                 size_remote = most_recent_version['size']
 
-            most_recent_version:
+            else:
                 logging.info("No archive found for this path in local database")
                 hash_remote = size_remote = None
 
@@ -242,7 +242,7 @@ if __name__ == "__main__":
                     # Store the info about the newly uploaded file in the database
                     backupmongo.create_archive_entry(db,
                                                      backup_subdir_rel_filename,
-                                                     aws_vault_arn
+                                                     aws_vault_arn,
                                                      upload_status["archiveId"],
                                                      archive_hash,
                                                      size_arch,
