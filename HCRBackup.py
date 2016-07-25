@@ -101,6 +101,13 @@ def delete_archive(archive_id, aws_vault, aws_account_id):
         print e.cmd
         print e.output
 
+def delete_redundant_archives(db, aws_vault_name, aws_account_id):
+    redundant_archives = backupmongo.get_archives_to_delete(db)
+    for arch in redundant_archives:
+        print "Deleting %s from AWS..."
+        delete_archive(arch["_id"], aws_vault_name, aws_account_id)
+        pymongo.delete_archive_document(db,arch["_id"])
+
 
 def compare_files(length_a, hash_a, length_b, hash_b):
     return (length_a == length_b) & (hash_a == hash_b)
@@ -216,20 +223,18 @@ if __name__ == "__main__":
             # available
             # This could only be the case when we've uploaded a new version of an archive, thereby
             # making an old version irrelevant - so we only need to look for archives with this path.
-            old_archives = backupmongo.get_old_archives(db, backup_subdir_rel_filename, aws_vault_arn)
-            for arch in old_archives:
-                backupmongo.mark_archive_for_deletion(db, arch["_id"])
+            if not args.no_prune:
+                old_archives = backupmongo.get_old_archives(db, backup_subdir_rel_filename, aws_vault_arn)
+                for arch in old_archives:
+                    backupmongo.mark_archive_for_deletion(db, arch["_id"])
 
         # Delete the temporary directory.
         os.rmdir(temp_dir)
 
+# Deal with lack of prunes
     if not args.no_prune:
         # Find and delete old archives
-        redundant_archives = get_archives_to_delete(db)
-        for arch in redundant_archives:
-            print "Deleting %s from AWS..."
-            delete_archive(arch["_id"], aws_vault_name, aws_account_id)
-            pymongo.delete_archive_document(db,arch["_id"])
+        delete_redundant_archives(db, aws_vault_name, aws_account_id)
 
 
     # Finished with the database
