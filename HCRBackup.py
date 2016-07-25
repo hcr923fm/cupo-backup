@@ -27,8 +27,7 @@ def archive_directory(top_dir, subdir, tmpdir):
         if os.path.isfile(fpath) and not fpath.endswith(".ini"):
             files.append(fpath)
 
-    if files:  # No point creating empty zips!
-        # sevenz_loc = os.path.join("C:\\", "Program Files", "7-Zip", "7z.exe")
+    if files:  # No point creating empty archives!
         archive_file_path = os.path.join(tmpdir, os.path.basename(subdir)) + ".7z"
 
         print "Archiving", subdir, "to", archive_file_path
@@ -92,7 +91,6 @@ def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id):
 
 def delete_archive(archive_id, aws_vault, aws_account_id):
     devnull = open(os.devnull, "w")
-    aws_cli_path = os.path.join("C:\\", "Program Files", "Amazon", "AWSCLI", "aws.exe")
     try:
         aws_cli_op = subprocess.check_output(
             ["aws", "glacier", "delete-archive", "--account-id", aws_account_id,
@@ -129,6 +127,9 @@ if __name__ == "__main__":
                             metavar='db_name')
     arg_parser.add_argument('--no-backup',
                             help='If passed, the backup operation will not take place, going straight to the maintenance operations',
+                            action='store_true')
+    arg_parser.add_argument('--no-prune',
+                            help='If passed, the process of finding and removing old archives will not take place.',
                             action='store_true')
 
     args = arg_parser.parse_args()
@@ -222,12 +223,13 @@ if __name__ == "__main__":
         # Delete the temporary directory.
         os.rmdir(temp_dir)
 
-    # Find and delete old archives
-    redundant_archives = get_archives_to_delete(db)
-    for arch in redundant_archives:
-        print "Deleting %s from AWS..."
-        delete_archive(arch["_id"], aws_vault_name, aws_account_id)
-        pymongo.delete_archive_document(db,arch["_id"])
+    if not args.no_prune:
+        # Find and delete old archives
+        redundant_archives = get_archives_to_delete(db)
+        for arch in redundant_archives:
+            print "Deleting %s from AWS..."
+            delete_archive(arch["_id"], aws_vault_name, aws_account_id)
+            pymongo.delete_archive_document(db,arch["_id"])
 
 
     # Finished with the database
