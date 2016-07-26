@@ -73,14 +73,15 @@ def create_archive_entry(db, archived_dir_path, vault_arn, aws_archive_id,
     doc_arch["to_delete"] = 0
 
     # Add the entry.
-    return db['archives'].insert(doc_path)
+    return db['archives'].insert(doc_arch)
 
 def get_most_recent_version_of_archive(db, path):
     return db["archives"].find_one(
         {"path": path, "to_delete": 0},
         sort=[('uploaded_time', pymongo.DESCENDING)])
 
-def get_old_archives(db, archived_dir_path, vault_arn):
+def get_old_archives(db, archived_dir_path, vault_name):
+    vault_arn = get_vault_by_name(db, vault_name)["arn"]
 
     deadline_dt = datetime.datetime.utcnow() - datetime.timedelta(weeks=12)
     deadline_ts = time.mktime(deadline_dt.timetuple())
@@ -110,7 +111,7 @@ def get_archives_to_delete(db):
     cursor = db["archives"].find({"to_delete": 1})
     redundant_archives = []
     for arch in cursor:
-        redundant_archives.append()
+        redundant_archives.append(arch)
 
     return redundant_archives
 
@@ -118,19 +119,19 @@ def delete_archive_document(db, archive_id):
     db["archives"].find_one_and_delete({"_id": archive_id})
 
 def get_vault_by_name(db, vault_name):
-    return db['archives'].find_one({"name": vault_name})
+    return db['vaults'].find_one({"name": vault_name})
 
 def get_vault_by_arn(db, vault_arn):
-    return db['archives'].find_one({"arn": vault_arn})
+    return db['vaults'].find_one({"arn": vault_arn})
 
 def connect(database_name, host="localhost", port=27017):
-    mongodb_uri = "mongo://{host}:{port}".format(host=host, port=port)
+    mongodb_uri = "{host}:{port}".format(host=host, port=port)
     client = pymongo.MongoClient(mongodb_uri)
 
     if database_name in client.database_names():
         db = client[database_name]
     else:
-        db = create_backup_database(database_name, client)
+        db = create_backup_database(database_name, client, vault_name)
 
     return client, db
 

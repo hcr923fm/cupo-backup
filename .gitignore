@@ -63,5 +63,6 @@ target/
 /backup_dst
 /.idea
 /test_src
+/not_test_src
 
 # Created by .ignore support plugin (hsz.mobi)

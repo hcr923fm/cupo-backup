@@ -29,6 +29,7 @@ def archive_directory(top_dir, subdir, tmpdir):
     for c in dir_contents:
         fpath = os.path.join(top_dir, subdir, c)
         if os.path.isfile(fpath) and not fpath.endswith(".ini"):
+            logging.debug("Adding to archive list: {0}".format(c))
             files.append(fpath)
 
     if files:  # No point creating empty archives!
@@ -92,10 +93,12 @@ def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id, du
         else:
             # This is a dummy upload, for testing purposes. Create a fake
             # AWS URI and location, but don't touch the archive.
+            logging.info("Dummy upload - not actually uploading archive!")
             aws_params = {}
-            aws_params["archiveId"] = aws_vault + "-hcrbackup-" + time.time()
+            aws_params["archiveId"] = "{0}-hcrbackup-{1}".format(aws_vault, time.time())
             aws_params["location"] = "aws://dummy-uri-" + aws_params["archiveId"]
             aws_params["checksum"] = archive_treehash
+            print aws_params
 
         logging.debug("Uploaded archive {archpath} \n \
                       Returned fields: \n \
@@ -136,7 +139,8 @@ def delete_redundant_archives(db, aws_vault_name, aws_account_id):
     for arch in redundant_archives:
         deleted_aws = delete_aws_archive(arch["_id"], aws_vault_name, aws_account_id)
         if deleted_aws:
-            pymongo.delete_archive_document(db,arch["_id"])
+            backupmongo.delete_archive_document(db,arch["_id"])
+            logging.debug("Deleted archive with ID {0} from local database".format(arch["_id"]))
         else:
             logging.info("AWS deletion failed; not removing database entry")
 
@@ -150,7 +154,7 @@ def list_dirs(top_dir):
     for dirname, subdirs, files in os.walk(top_dir):
         for s in subdirs:
             dirs.append(os.path.relpath(os.path.join(dirname, s), top_dir))
-            logging.debug("Found {0}".format(s))
+            logging.debug("Found subdirectory {0}".format(s))
     return dirs
 
 
@@ -174,10 +178,20 @@ if __name__ == "__main__":
     arg_parser.add_argument('--dummy-upload',
                             help='If passed, the archives will not be uploaded, but a dummy AWS URI and archive ID will be generated. Use for testing only.',
                             action='store_true')
+    arg_parser.add_argument('--debug',
+                            help='If passed, the default logging level will be set to DEBUG.',
+                            action='store_true')
+    arg_parser.add_argument('--logging-dir',
+                            help='The log will be stored in this directory, if passed.',
+                            metavar='logging_dir',
+                            default=os.path.join(os.path.expanduser('~'), '.HCRBackupLog')
 
     args = arg_parser.parse_args()
 
-    logging.basicConfig(filename="/var/log/HCRBackup", level=logging.INFO)
+    if args.debug:
+        logging.basicConfig(filename=args.logging_dir, level=logging.DEBUG)
+    else:
+        logging.basicConfig(filename=args.logging_dir, level=logging.INFO)
 
     # Top of directory to backup
     root_dir = args.directory
@@ -219,7 +233,7 @@ if __name__ == "__main__":
             backup_subdir_rel_filename = subdir_to_backup + ".7z"
 
             # Find most recent version of this file in Glacier
-            most_recent_version = backupmongo.get_most_recent_version_of_archive(backup_subdir_rel_filename)
+            most_recent_version = backupmongo.get_most_recent_version_of_archive(db, backup_subdir_rel_filename)
 
             if most_recent_version:
                 logging.info("Archive for this path exists in local database")
@@ -239,7 +253,7 @@ if __name__ == "__main__":
                 upload_status = upload_archive(tmp_archive_fullpath, aws_vault_name, archive_hash, aws_account_id, args.dummy_upload)
                 if upload_status:
                     # Get vault arn:
-                    aws_vault_arn = backupmongo.get_vault_by_name(aws_vault_name)["arn"]
+                    aws_vault_arn = backupmongo.get_vault_by_name(db, aws_vault_name)["arn"]
 
                     # Store the info about the newly uploaded file in the database
                     backupmongo.create_archive_entry(db,
@@ -264,9 +278,10 @@ if __name__ == "__main__":
             # This could only be the case when we've uploaded a new version of an archive, thereby
             # making an old version irrelevant - so we only need to look for archives with this path.
             if not args.no_prune:
-                old_archives = backupmongo.get_old_archives(db, backup_subdir_rel_filename, aws_vault_arn)
+                old_archives = backupmongo.get_old_archives(db, backup_subdir_rel_filename, aws_vault_name)
                 for arch in old_archives:
-                    logging.info("Marking archive with ID {0} as redundant").format(arch["_id"])
+                    print arch
+                    logging.info("Marking archive with ID {0} as redundant".format(arch["_id"]))
                     backupmongo.mark_archive_for_deletion(db, arch["_id"])
             else:
                 logging.info("Not marking old versions")
@@ -275,12 +290,17 @@ if __name__ == "__main__":
         logging.info("Removing temporary working folder")
         os.rmdir(temp_dir)
 
+    else:
+        logging.info("Skipping file backup - '--no-backup' supplied.")
+
     if not args.no_prune:
         # Find and delete old archives
-        logging.info("Skipping archive pruning - '--no-prune' supplied.")
+        logging.info("Deleting redundant archives")
         delete_redundant_archives(db, aws_vault_name, aws_account_id)
+    else:
+        logging.info("Skipping archive pruning - '--no-prune' supplied.")
 
 
     # Finished with the database
-    logging.info("Closing MongoDB database")
+    logging.info("Closing MongoDB database\r\n\r\n")
     db_client.close()
