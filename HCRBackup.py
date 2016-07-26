@@ -11,6 +11,9 @@ import datetime, time
 import backupmongo
 import logging
 
+# TODO: Move old archive detection into own method, and add unique path detection,
+#       so not only triggered when adding new archives.
+
 
 # Only the *files* in a given directory are archived, not the subdirectories.
 # The contents of the subdirectories live in archives of their own (except for any directories that *they* contain)
@@ -149,6 +152,7 @@ def compare_files(length_a, hash_a, length_b, hash_b):
 
 
 def list_dirs(top_dir):
+    # Find all of the subdirectories in a given directory.
     logging.info("Finding subdirectories of {0}".format(top_dir))
     dirs = []
     for dirname, subdirs, files in os.walk(top_dir):
