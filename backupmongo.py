@@ -20,7 +20,6 @@ import time, datetime
 # db.vaults.insert_one({
 #     "arn": "aws://AWS-VAULT-ARN-123456789",
 #     "name": "vault name",
-#     "region": "eu-west-1"
 # })
 
 
@@ -43,7 +42,7 @@ def create_backup_database(database_name, db_client, drop_existing=True):
 
     return db
 
-def create_vault_entry(db, vault_arn, vault_name, vault_region):
+def create_vault_entry(db, vault_arn, vault_name):
     # Check first to see if there's already a vault by this name.
     existing_vault_entry = db["vaults"].find_one({"name": vault_name})
     # If so, return that instead.
@@ -53,7 +52,6 @@ def create_vault_entry(db, vault_arn, vault_name, vault_region):
     doc_vault = {}
     doc_vault["arn"] = vault_arn
     doc_vault["name"] = vault_name
-    doc_vault["region"] = vault_region
 
     return db["vaults"].insert_one(doc_vault).inserted_id
 
@@ -131,7 +129,7 @@ def connect(database_name, host="localhost", port=27017):
     if database_name in client.database_names():
         db = client[database_name]
     else:
-        db = create_backup_database(database_name, client, vault_name)
+        db = create_backup_database(database_name, client)
 
     return client, db
 

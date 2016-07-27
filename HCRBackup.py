@@ -76,22 +76,24 @@ def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id, du
 
     try:
         if not dummy:
-            aws_cli_op = subprocess.check_output(
-                ["aws" "glacier", "upload-archive", "--vault-name", aws_vault, "--account-id", aws_account_id,
-                 "--checksum", archive_treehash, "--body", archive_path], stderr=devnull)
-            devnull.close()
+                cmd = ["aws", "glacier", "upload-archive", "--account-id", aws_account_id]
+                if aws_profile: cmd.extend(["--profile", aws_profile])
+                cmd.extend(["--checksum", archive_treehash, "--vault-name",
+                            aws_vault,"--body", archive_path])
+                aws_cli_op = subprocess.check_output(cmd, stderr=devnull)
+                devnull.close()
 
-            aws_cli_op = aws_cli_op.replace("\r\n", "")
+                aws_cli_op = aws_cli_op.replace("\r\n", "")
 
-            # Returned fields from upload:
-            # location -> (string)
-            # The relative URI path of the newly added archive resource.
-            # checksum -> (string)
-            # The checksum of the archive computed by Amazon Glacier.
-            # archiveId -> (string)
-            # The ID of the archive. This value is also included as part of the location.
+                # Returned fields from upload:
+                # location -> (string)
+                # The relative URI path of the newly added archive resource.
+                # checksum -> (string)
+                # The checksum of the archive computed by Amazon Glacier.
+                # archiveId -> (string)
+                # The ID of the archive. This value is also included as part of the location.
 
-            aws_params = json.loads(aws_cli_op)
+                aws_params = json.loads(aws_cli_op)
 
         else:
             # This is a dummy upload, for testing purposes. Create a fake
@@ -101,7 +103,6 @@ def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id, du
             aws_params["archiveId"] = "{0}-hcrbackup-{1}".format(aws_vault, time.time())
             aws_params["location"] = "aws://dummy-uri-" + aws_params["archiveId"]
             aws_params["checksum"] = archive_treehash
-            print aws_params
 
         logging.debug("Uploaded archive {archpath} \n \
                       Returned fields: \n \
@@ -122,17 +123,16 @@ def delete_aws_archive(archive_id, aws_vault, aws_account_id):
 
     devnull = open(os.devnull, "w")
     try:
-        aws_cli_op = subprocess.check_output(
-            ["aws", "glacier", "delete-archive", "--account-id", aws_account_id,
-             "--archive-id", archive_id], stderr=devnull)
+        cmd = ["aws", "glacier", "delete-archive", "--account-id", aws_account_id]
+        if aws_profile: cmd.extend(["--profile", aws_profile])
+        cmd.extend(["--archive-id", archive_id])
+
+        aws_cli_op = subprocess.check_output(cmd, stderr=devnull)
+
         logging.info("Successfully deleted archive from AWS")
         return 1
 
     except subprocess.CalledProcessError, e:
-        print "Deletion failed with error", e.returncode
-        print e.message
-        print e.cmd
-        print e.output
         logging.error("Failed to delete archive from AWS! Error: {err.returncode}\n \
                       \t{err.message}\n\t{err.cmd}\n\t{err.output}".format(err=e))
         return None
@@ -161,52 +161,103 @@ def list_dirs(top_dir):
             logging.debug("Found subdirectory {0}".format(s))
     return dirs
 
+def add_new_vault(db, vault_name):
+    logging.info("Creating new vault: {0}".format(vault_name))
+    devnull = open(os.devnull, "w")
+    try:
+        cmd = ["aws", "glacier", "create-vault", "--account-id", aws_account_id]
+        if aws_profile: cmd.extend(["--profile", aws_profile])
+        cmd.extend(["--vault-name", vault_name])
+        aws_cli_op = subprocess.check_output(cmd, stderr=devnull)
+
+        # Returned fields from create-vault:
+        # location -> (string)
+        # The URI of the vault that was created.
+        aws_cli_op = aws_cli_op.replace("\r\n", "")
+        aws_cli_op_json = json.loads(aws_cli_op)
+        aws_vault_arn = aws_cli_op_json["location"]
+
+        logging.info("Successfully created AWS vault {0}:\n {1}".format(vault_name, aws_vault_arn))
+        backupmongo.create_vault_entry(db, aws_vault_arn, vault_name)
+        logging.info("Created database entry for vault {0}".format(vault_name))
+        return 1
+
+    except subprocess.CalledProcessError, e:
+        logging.error("Failed to create new vault. Error: {err.returncode}\n \
+                      \t{err.message}\n\t{err.cmd}\n\t{err.output}".format(err=e))
+        return None
+
 
 if __name__ == "__main__":
 
     arg_parser = argparse.ArgumentParser(
         description='A tool to manage differential file uploads to an Amazon Glacier repository')
-    arg_parser.add_argument('directory', help='The top directory to back up', metavar='top_dir')
-    arg_parser.add_argument('vault', help='The name of the vault to upload the archive to', metavar='vault_name')
     arg_parser.add_argument('--account-id', help='The AWS ID of the account that owns the specified vault',
                             metavar='aws_acct_id', default='-')
+    arg_parser.add_argument('--aws-profile',
+                            help='If supplied, the "--profile" switch will be passed to the AWS CLI for credential management.',
+                            metavar='aws-profile')
     arg_parser.add_argument('--database',
                             help='The database file name to connect to (relative paths will be evaluated from the execution directory)',
                             metavar='db_name')
-    arg_parser.add_argument('--no-backup',
-                            help='If passed, the backup operation will not take place, going straight to the maintenance operations',
-                            action='store_true')
-    arg_parser.add_argument('--no-prune',
-                            help='If passed, the process of finding and removing old archives will not take place.',
-                            action='store_true')
-    arg_parser.add_argument('--dummy-upload',
-                            help='If passed, the archives will not be uploaded, but a dummy AWS URI and archive ID will be generated. Use for testing only.',
-                            action='store_true')
     arg_parser.add_argument('--debug',
                             help='If passed, the default logging level will be set to DEBUG.',
                             action='store_true')
     arg_parser.add_argument('--logging-dir',
                             help='The log will be stored in this directory, if passed.',
                             metavar='logging_dir',
-                            default=os.path.join(os.path.expanduser('~'), '.HCRBackupLog')
+                            default=os.path.expanduser('~'))
+
+    subparsers = arg_parser.add_subparsers()
+
+    arg_parser_backup = subparsers.add_parser('backup', help="Execute incremental backup of a directory to an Amazon Glacier \
+                                              vault, and prune any outdated archives.")
+    arg_parser_backup.add_argument('backup_directory', help='The top directory to back up', metavar='top_dir')
+    arg_parser_backup.add_argument('backup_vault_name', help='The name of the vault to upload the archive to', metavar='vault_name')
+    arg_parser_backup.add_argument('--no-backup',
+                            help='If passed, the backup operation will not take place, going straight to the maintenance operations',
+                            action='store_true')
+    arg_parser_backup.add_argument('--no-prune',
+                            help='If passed, the process of finding and removing old archives will not take place.',
+                            action='store_true')
+    arg_parser_backup.add_argument('--dummy-upload',
+                            help='If passed, the archives will not be uploaded, but a dummy AWS URI and archive ID will be generated. Use for testing only.',
+                            action='store_true')
+
+    arg_parser_new_vault = subparsers.add_parser('new-vault', help="Add a new \
+vault to the specified Glacier account, and register it with the local database.")
+    arg_parser_new_vault.add_argument('new_vault_name', help='The name of the new vault to create.',
+                                      metavar='new_vault_name')
+
 
     args = arg_parser.parse_args()
 
+    logFormat = """%(asctime)s:%(levelname)s:%(module)s: %(message)s"""
     if args.debug:
-        logging.basicConfig(filename=args.logging_dir, level=logging.DEBUG)
+        logging.basicConfig(filename=os.path.join(args.logging_dir,'.HCRBackupLog'),
+                            level=logging.DEBUG, format=logFormat)
     else:
-        logging.basicConfig(filename=args.logging_dir, level=logging.INFO)
+        logging.basicConfig(filename=os.path.join(args.logging_dir,'.HCRBackupLog'),
+                            level=logging.INFO, format=logFormat)
+
+    aws_account_id = args.account_id
+    db_name = args.database
+    aws_profile = args.aws_profile or None
+    db_client, db = backupmongo.connect(db_name)
+
+    # If we're just adding a new vault...
+    # TODO: There has to be a better way...
+    if "new_vault_name" in dir(args):
+        if args.new_vault_name:
+            add_new_vault(db, args.new_vault_name)
+            exit()
 
     # Top of directory to backup
-    root_dir = args.directory
+    root_dir = args.backup_directory
     if not os.path.exists(root_dir):
         raise ValueError("%s does not exist" % root_dir)
 
-    aws_vault_name = args.vault
-    aws_account_id = args.account_id
-    db_name = args.database
-
-    db_client, db = backupmongo.connect(db_name)
+    aws_vault_name = args.backup_vault_name
 
     if not args.no_backup:
 
@@ -268,9 +319,9 @@ if __name__ == "__main__":
                                                      size_arch,
                                                      upload_status["location"])
                 else:
-                    print logging.error("Failed to upload {0}".format(backup_subdir_rel_filename))
+                    logging.error("Failed to upload {0}".format(backup_subdir_rel_filename))
             else:
-                print logging.info("Skipped uploading {0} - archive has not changed".format(
+                logging.info("Skipped uploading {0} - archive has not changed".format(
                     backup_subdir_rel_filename))
 
             # Delete the temporary archive
@@ -284,7 +335,6 @@ if __name__ == "__main__":
             if not args.no_prune:
                 old_archives = backupmongo.get_old_archives(db, backup_subdir_rel_filename, aws_vault_name)
                 for arch in old_archives:
-                    print arch
                     logging.info("Marking archive with ID {0} as redundant".format(arch["_id"]))
                     backupmongo.mark_archive_for_deletion(db, arch["_id"])
             else:
