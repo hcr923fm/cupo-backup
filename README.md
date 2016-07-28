@@ -28,6 +28,8 @@ Open a terminal, `cd` into your favourite directory and run:
 
 `git clone https://github.com/calmcl1/HCRBackup.git; cd HCRBackup`
 
+That's it!
+
 ## Usage
 
 ### Creating a New Vault
@@ -40,10 +42,12 @@ where:
 * `DATABASE_NAME` is the name of the MongoDB that we're using to store the local Glacier archive tracking data in. It will be created if it does not already exist.
 * `NEW_VAULT_NAME` is the name of the Glacier vault that we're storing the the backup archives in. It will be created in Glacier if it does not yet exist.
 
-### Backup Up a Directory
+### Backing Up a Directory
 
 Now, it's as simple as specifying a directory to back up and a vault!
+
 `HCRBackup.py --account-id AWS_ACCOUNT_ID --database DATABASE_NAME backup TOP_DIR VAULT_NAME`
+
 where:
 * `TOP_DIR` is the root directory to back up.
 * `VAULT_NAME` is the Glacier vault to back up to. It will not created if it doesn't exist - use `HCRBackup.py new-vault` first.
