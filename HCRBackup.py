@@ -13,6 +13,7 @@ import logging
 
 # TODO: Move old archive detection into own method, and add unique path detection,
 #       so not only triggered when adding new archives.
+# TODO: Add network rate limiting
 
 
 # Only the *files* in a given directory are archived, not the subdirectories.
