@@ -28,7 +28,7 @@ To start off, create a new vault in Glacier (or, if a vault that you want to use
 `HCRBackup.py --account-id AWS_ACCOUNT_ID --database DATABASE_NAME new-vault NEW_VAULT_NAME`
 
 where:
-* `AWS_ACCOUNT_ID` is, unsurprisingly, the accound ID associated with your AWS account - a numerical value.
+* `AWS_ACCOUNT_ID` is, unsurprisingly, the account ID associated with your AWS account - a numerical value.
 * `DATABASE_NAME` is the name of the MongoDB that we're using to store the local Glacier archive tracking data in. It will be created if it does not already exist.
 * `NEW_VAULT_NAME` is the name of the Glacier vault that we're storing the the backup archives in. It will be created in Glacier if it does not yet exist.
 
