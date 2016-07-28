@@ -5,14 +5,14 @@ So, you want to back up a radio station...
 
 ### Prerequisites
 * Python < 2.7+ *(but not Python 3 - yet)*
-* Amazon AWS command-line interface (`pip install awscli`)
+* Amazon AWS command-line interface
 * MongoDB
 * `python-botocore`
 * `p7zip-full` *(must be the 'full' version!)*
 
 #### Installing and Configuring Prerequisites
 * Use the following command to install most of the dependencies from apt:
-`sudo apt-get install python-all python-pip p7zip-full`
+`sudo apt-get install python-all python-pip python-botocore p7zip-full`
 * Install MongoDB for your system as described [in the MongoDB docs](http://docs.mongodb.com/manual/administration/install-on-linux).
 * Once that's completed, install the AWS command-line tool:
 `pip install awscli`
