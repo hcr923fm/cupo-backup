@@ -22,7 +22,15 @@ and supply your AWS credentials.
 * MongoDB needs a data directory to run - by default it's `/data/db`. Create this directory, and make sure that the current user is a member of the `mongodb` group, and that the group has full permissions to that directory:
 `mkdir -p /data/db; usermod -a -G mongodb <username>; chgrp -R mongodb /data/db`
 
+### Grabbing the Source
+It's all Python, so no compilation required!
+Open a terminal, `cd` into your favourite directory and run:
+
+`git clone https://github.com/calmcl1/HCRBackup.git; cd HCRBackup`
+
 ## Usage
+
+### Creating a New Vault
 To start off, create a new vault in Glacier (or, if a vault that you want to use already exists in AWS, register it in the local database):
 
 `HCRBackup.py --account-id AWS_ACCOUNT_ID --database DATABASE_NAME new-vault NEW_VAULT_NAME`
@@ -31,6 +39,8 @@ where:
 * `AWS_ACCOUNT_ID` is, unsurprisingly, the account ID associated with your AWS account - a numerical value.
 * `DATABASE_NAME` is the name of the MongoDB that we're using to store the local Glacier archive tracking data in. It will be created if it does not already exist.
 * `NEW_VAULT_NAME` is the name of the Glacier vault that we're storing the the backup archives in. It will be created in Glacier if it does not yet exist.
+
+### Backup Up a Directory
 
 Now, it's as simple as specifying a directory to back up and a vault!
 `HCRBackup.py --account-id AWS_ACCOUNT_ID --database DATABASE_NAME backup TOP_DIR VAULT_NAME`
