@@ -191,16 +191,15 @@ def add_new_vault(db, vault_name):
 
 if __name__ == "__main__":
 
-    arg_parser = argparse.ArgumentParser(
-        description='A tool to manage differential file uploads to an Amazon Glacier repository')
+    arg_parser = argparse.ArgumentParser(description='A tool to manage differential file uploads to an Amazon Glacier repository')
     arg_parser.add_argument('--account-id', help='The AWS ID of the account that owns the specified vault',
-                            metavar='aws_acct_id', default='-')
+                            metavar='aws_acct_id', default='-', required=True)
     arg_parser.add_argument('--aws-profile',
                             help='If supplied, the "--profile" switch will be passed to the AWS CLI for credential management.',
                             metavar='aws-profile')
     arg_parser.add_argument('--database',
-                            help='The database file name to connect to (relative paths will be evaluated from the execution directory)',
-                            metavar='db_name')
+                            help='The database name to connect to.',
+                            metavar='db_name', required=True)
     arg_parser.add_argument('--debug',
                             help='If passed, the default logging level will be set to DEBUG.',
                             action='store_true')
@@ -209,8 +208,7 @@ if __name__ == "__main__":
                             metavar='logging_dir',
                             default=os.path.expanduser('~'))
 
-    subparsers = arg_parser.add_subparsers()
-
+    subparsers = arg_parser.add_subparsers(help="Run HCRBackup backup|new-vault --help for more info on each command.")
     arg_parser_backup = subparsers.add_parser('backup', help="Execute incremental backup of a directory to an Amazon Glacier \
                                               vault, and prune any outdated archives.")
     arg_parser_backup.add_argument('backup_directory', help='The top directory to back up', metavar='top_dir')
@@ -226,7 +224,7 @@ if __name__ == "__main__":
                             action='store_true')
 
     arg_parser_new_vault = subparsers.add_parser('new-vault', help="Add a new \
-vault to the specified Glacier account, and register it with the local database.")
+     vault to the specified Glacier account, and register it with the local database.")
     arg_parser_new_vault.add_argument('new_vault_name', help='The name of the new vault to create.',
                                       metavar='new_vault_name')
 
