@@ -45,7 +45,7 @@ def archive_directory(top_dir, subdir, tmpdir):
             subprocess.check_call(
                 ["7z", "a", "-t7z", archive_file_path, os.path.join(full_backup_path, "*"),
                  "-m0=BZip2", "-y", "-aoa", "-xr-!*/", "-xr-!*sync-conflict*",
-                 "-xr-!*.ini"], stdout=devnull, stderr=devnull)
+                 "-xr-!*desktop.ini", "-xr-!*.tmp", "-xr-!*thumbs.db"], stdout=devnull, stderr=devnull)
             devnull.close()
             logging.debug("Created archive at %s" % archive_file_path)
             return archive_file_path
