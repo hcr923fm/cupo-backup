@@ -65,4 +65,7 @@ target/
 /test_src
 /not_test_src
 
+# notes/imdone atom plugin
+/.imdone
+
 # Created by .ignore support plugin (hsz.mobi)
