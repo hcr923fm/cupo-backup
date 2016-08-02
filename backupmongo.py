@@ -81,7 +81,7 @@ def get_most_recent_version_of_archive(db, path):
 def get_old_archives(db, archived_dir_path, vault_name):
     vault_arn = get_vault_by_name(db, vault_name)["arn"]
 
-    deadline_dt = datetime.datetime.utcnow() - datetime.timedelta(weeks=12)
+    deadline_dt = datetime.datetime.utcnow() - datetime.timedelta(days=93)
     deadline_ts = time.mktime(deadline_dt.timetuple())
     cursor = db["archives"].find({"to_delete":0,
                                   "path": archived_dir_path,
