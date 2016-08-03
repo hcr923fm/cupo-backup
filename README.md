@@ -1,4 +1,4 @@
-# HCRBackup
+# Cupo
 So, you want to back up a radio station...
 
 ## Installing
@@ -26,7 +26,7 @@ and supply your AWS credentials.
 It's all Python, so no compilation required!
 Open a terminal, `cd` into your favourite directory and run:
 
-`git clone https://github.com/calmcl1/HCRBackup.git; cd HCRBackup`
+`git clone https://github.com/calmcl1/cupo-backup.git; cd cupo-backup`
 
 That's it!
 
@@ -35,7 +35,7 @@ That's it!
 ### Creating a New Vault
 To start off, create a new vault in Glacier (or, if a vault that you want to use already exists in AWS, register it in the local database):
 
-`HCRBackup.py --account-id AWS_ACCOUNT_ID --database DATABASE_NAME new-vault NEW_VAULT_NAME`
+`cupo.py --account-id AWS_ACCOUNT_ID --database DATABASE_NAME new-vault NEW_VAULT_NAME`
 
 where:
 * `AWS_ACCOUNT_ID` is, unsurprisingly, the account ID associated with your AWS account - a numerical value.
@@ -46,12 +46,12 @@ where:
 
 Now, it's as simple as specifying a directory to back up and a vault!
 
-`HCRBackup.py --account-id AWS_ACCOUNT_ID --database DATABASE_NAME backup TOP_DIR VAULT_NAME`
+`cupo.py --account-id AWS_ACCOUNT_ID --database DATABASE_NAME backup TOP_DIR VAULT_NAME`
 
 where:
 * `TOP_DIR` is the root directory to back up.
-* `VAULT_NAME` is the Glacier vault to back up to. It will not created if it doesn't exist - use `HCRBackup.py new-vault` first.
+* `VAULT_NAME` is the Glacier vault to back up to. It will not created if it doesn't exist - use `cupo.py new-vault` first.
 
-There isn't much output on the terminal, but a log will created that you can `tail -f` if you wish. The default log location is `~/.HCRBackupLog`, but this can be changed with the `--logging-dir` switch.
+There isn't much output on the terminal, but a log will created that you can `tail -f` if you wish. The default log location is `~/.CupoLog`, but this can be changed with the `--logging-dir` switch.
 
-For more info, use `HCRBackup.py [backup | new-vault] -h`.
+For more info, use `cupo.py [backup | new-vault] -h`.
