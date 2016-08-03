@@ -14,7 +14,8 @@ import logging
 # TODO:40 Move old archive detection into own method, and add unique path detection, so not only triggered when adding new archives.
 # TODO:10 Add network rate limiting issue:1
 # TODO:0 Add a way of specifying the amount of redundant backups that should be kept issue:2
-# TODO:20 Specify the minimum amount of time that a backup should be kept for if there are more than <min amount> of backups remaining.
+# TODO:20 Specify the minimum amount of time that a backup should be kept for if there are more than <min amount> of backups remaining. issue:3
+# TODO: Use a config file! issue:5
 
 
 # Only the *files* in a given directory are archived, not the subdirectories.
@@ -247,7 +248,7 @@ if __name__ == "__main__":
     db_client, db = backupmongo.connect(db_name)
 
     # If we're just adding a new vault...
-    # TODO:50 There has to be a better way...
+    # TODO:50 There has to be a better way to process the args command...
     if "new_vault_name" in dir(args):
         if args.new_vault_name:
             add_new_vault(db, args.new_vault_name)
@@ -270,7 +271,7 @@ if __name__ == "__main__":
             root_dir, aws_vault_name, aws_account_id))
 
         subdirs_to_backup = list_dirs(root_dir)  # List of subtrees, relative to root_dir
-        subdirs_to_backup.append("")  # TODO:30 Dammit I will get this working - get the root directory contents to be zipped
+        subdirs_to_backup.append("")  # TODO:30 Dammit I will get this working - get the root directory contents to be zipped issue:4
 
         for subdir_to_backup in subdirs_to_backup:
 

@@ -59,13 +59,14 @@ docs/_build/
 # PyBuilder
 target/
 
+# notes/imdone atom plugin
+/.imdone
+
 /.gitignore
 /backup_dst
 /.idea
 /test_src
 /not_test_src
-
-# notes/imdone atom plugin
-/.imdone
+test_config.yml
 
 # Created by .ignore support plugin (hsz.mobi)
