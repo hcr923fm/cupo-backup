@@ -1,5 +1,3 @@
-# test_config.json
-# HCRBackup test config
 {
   "database-name": "DATABASE-NAME",
   "vault-name": "VAULT-NAME",
