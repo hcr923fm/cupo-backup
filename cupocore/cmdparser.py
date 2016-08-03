@@ -63,11 +63,12 @@ def parse_args():
     # options can be accessed from the same object
     cmd_opts = cmdOptions()
     __parse_cmd_args(cmd_opts)
-    if hasattr(cmd_opts, "config_file"):
-        if cmd_opts.config_file:
-            __load_config_file_args(cmd_opts.config_file, cmd_opts)
+    if os.path.exists(cmd_opts.config_file):
+        __load_config_file_args(cmd_opts.config_file, cmd_opts)
+    else:
+        logging.error("Config file does not exist. Use '--config-file' to specify a location or create a file at ~/.cupo.json")
+        exit(1)
 
-    print cmd_opts.account_id
     if not hasattr(cmd_opts, "account_id") or not cmd_opts.account_id:
         logging.error("AWS account ID has not been supplied. Use '--account-id' or specify the 'account_id' option in a config file.")
         exit(1)
