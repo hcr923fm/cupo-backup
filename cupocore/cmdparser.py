@@ -22,7 +22,7 @@ def __parse_cmd_args(options_namespace):
                             help='The log will be stored in this directory, if passed.',
                             default=os.path.expanduser('~'))
     arg_parser.add_argument('--config-file',
-                            help='Loads options from a config file.')
+                            help='Loads options from a config file.', default=os.path.expanduser("~/cupo.json"))
 
     subparsers = arg_parser.add_subparsers(help="Run HCRBackup backup|new-vault --help for more info on each command.",
                                            dest="subparser_name")
