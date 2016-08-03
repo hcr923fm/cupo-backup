@@ -1,0 +1,12 @@
+# test_config.json
+# HCRBackup test config
+{
+  "database-name": "DATABASE-NAME",
+  "vault-name": "VAULT-NAME",
+  "aws-id": "000000000000",
+  "aws-profile": "AWS-PROFILE",
+
+  "debug": false,
+  "logging-dir": "/home/USERNAME",
+  "backup-directory": "/path/to/dir",
+}
