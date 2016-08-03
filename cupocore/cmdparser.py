@@ -1,28 +1,31 @@
 import argparse
 import os, os.path
+import json
+import logging
 
 class cmdOptions():
     pass
 
-def __parse_cmd_args():
+def __parse_cmd_args(options_namespace):
     arg_parser = argparse.ArgumentParser(description='A tool to manage differential file uploads to an Amazon Glacier repository')
     arg_parser.add_argument('--account-id', help='The AWS ID of the account that owns the specified vault',
-                            metavar='aws_acct_id', default='-', required=True)
+                            metavar='aws_acct_id')
     arg_parser.add_argument('--aws-profile',
-                            help='If supplied, the "--profile" switch will be passed to the AWS CLI for credential management.',
-                            metavar='aws-profile')
+                            help='If supplied, the "--profile" switch will be passed to the AWS CLI for credential management.')
     arg_parser.add_argument('--database',
                             help='The database name to connect to.',
-                            metavar='db_name', required=True)
+                            metavar='DB_NAME')
     arg_parser.add_argument('--debug',
                             help='If passed, the default logging level will be set to DEBUG.',
                             action='store_true')
     arg_parser.add_argument('--logging-dir',
                             help='The log will be stored in this directory, if passed.',
-                            metavar='logging_dir',
                             default=os.path.expanduser('~'))
+    arg_parser.add_argument('--config-file',
+                            help='Loads options from a config file.')
 
-    subparsers = arg_parser.add_subparsers(help="Run HCRBackup backup|new-vault --help for more info on each command.")
+    subparsers = arg_parser.add_subparsers(help="Run HCRBackup backup|new-vault --help for more info on each command.",
+                                           dest="subparser_name")
     arg_parser_backup = subparsers.add_parser('backup', help="Execute incremental backup of a directory to an Amazon Glacier \
                                               vault, and prune any outdated archives.")
     arg_parser_backup.add_argument('backup_directory', help='The top directory to back up', metavar='top_dir')
@@ -43,10 +46,32 @@ def __parse_cmd_args():
                                       metavar='new_vault_name')
 
 
-    args = arg_parser.parse_args(namespace=cmd_opts)
+    args = arg_parser.parse_args(namespace=options_namespace)
+
+def __load_config_file_args(config_file_path, options_namespace):
+    with open(config_file_path) as conf_f:
+        config_opts = json.load(conf_f)
+
+    for k in config_opts.viewkeys():
+        # Don't overwrite options that have been explicitly set on the command line
+        if not hasattr(options_namespace, k) or not getattr(options_namespace,k):
+            # Add the config option to the global options object
+            setattr(options_namespace, k, config_opts[k])
 
 def parse_args():
     # Creating a separate object so that both argparse'd switches and config file
     # options can be accessed from the same object
     cmd_opts = cmdOptions()
-    __parse_cmd_args()
+    __parse_cmd_args(cmd_opts)
+    if hasattr(cmd_opts, "config_file"):
+        if cmd_opts.config_file:
+            __load_config_file_args(cmd_opts.config_file, cmd_opts)
+
+    print cmd_opts.account_id
+    if not hasattr(cmd_opts, "account_id") or not cmd_opts.account_id:
+        logging.error("AWS account ID has not been supplied. Use '--account-id' or specify the 'account_id' option in a config file.")
+        exit(1)
+    if not hasattr(cmd_opts, "database") or not cmd_opts.database:
+        logging.error("MongoDB database has not been supplied. Use '--database' or specify the 'database' option in a config file.")
+        exit(1)
+    return cmd_opts

@@ -12,11 +12,11 @@ import logging
 import cupocore
 
 
-# TODO:40 Move old archive detection into own method, and add unique path detection, so not only triggered when adding new archives.
-# TODO:10 Add network rate limiting issue:1
+# TODO:50 Move old archive detection into own method, and add unique path detection, so not only triggered when adding new archives.
+# TODO:20 Add network rate limiting issue:1
 # TODO:0 Add a way of specifying the amount of redundant backups that should be kept issue:2
-# TODO:20 Specify the minimum amount of time that a backup should be kept for if there are more than <min amount> of backups remaining. issue:3
-# TODO: Use a config file! issue:5
+# TODO:30 Specify the minimum amount of time that a backup should be kept for if there are more than <min amount> of backups remaining. issue:3
+# DONE:10 Use a config file! issue:5
 
 
 # Only the *files* in a given directory are archived, not the subdirectories.
@@ -195,14 +195,14 @@ def add_new_vault(db, vault_name):
 
 if __name__ == "__main__":
 
-    s;kmsjd
+    args = cupocore.cmdparser.parse_args()
 
     logFormat = """%(asctime)s:%(levelname)s:%(module)s: %(message)s"""
     if args.debug:
-        logging.basicConfig(filename=os.path.join(args.logging_dir,'.HCRBackupLog'),
+        logging.basicConfig(filename=os.path.join(args.logging_dir,'.cupoLog'),
                             level=logging.DEBUG, format=logFormat)
     else:
-        logging.basicConfig(filename=os.path.join(args.logging_dir,'.HCRBackupLog'),
+        logging.basicConfig(filename=os.path.join(args.logging_dir,'.cupoLog'),
                             level=logging.INFO, format=logFormat)
 
     aws_account_id = args.account_id
@@ -211,8 +211,8 @@ if __name__ == "__main__":
     db_client, db = cupocore.mongoops.connect(db_name)
 
     # If we're just adding a new vault...
-    # #ToMarkClosed:0 There has to be a better way to process the args command...
-    if hasattr(args, "new_vault_name")
+    # DONE:0 There has to be a better way to process the args command...
+    if args.subparser_name == "new-vault":
         if args.new_vault_name:
             add_new_vault(db, args.new_vault_name)
             exit()
@@ -234,7 +234,7 @@ if __name__ == "__main__":
             root_dir, aws_vault_name, aws_account_id))
 
         subdirs_to_backup = list_dirs(root_dir)  # List of subtrees, relative to root_dir
-        subdirs_to_backup.append("")  # TODO:30 Dammit I will get this working - get the root directory contents to be zipped issue:4
+        subdirs_to_backup.append("")  # TODO:40 Dammit I will get this working - get the root directory contents to be zipped issue:4
 
         for subdir_to_backup in subdirs_to_backup:
 

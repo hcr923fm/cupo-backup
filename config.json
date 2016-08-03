@@ -1,10 +1,9 @@
 {
-  "database-name": "DATABASE-NAME",
-  "vault-name": "VAULT-NAME",
-  "aws-id": "000000000000",
-  "aws-profile": "AWS-PROFILE",
-
+  "database": "DATABASE-NAME",
+  "vault_name": "VAULT-NAME",
+  "account_id": "000000000000",
+  "aws_profile": "AWS-PROFILE",
   "debug": false,
-  "logging-dir": "/home/USERNAME",
-  "backup-directory": "/path/to/dir",
+  "logging_dir": "/home/USERNAME",
+  "backup_directory": "/path/to/dir"
 }
