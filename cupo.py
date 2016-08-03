@@ -5,11 +5,12 @@ import os, os.path
 import json
 import subprocess
 import tempfile
-import argparse
 import botocore.utils
 import datetime, time
-import backupmongo
 import logging
+
+import cupocore
+
 
 # TODO:40 Move old archive detection into own method, and add unique path detection, so not only triggered when adding new archives.
 # TODO:10 Add network rate limiting issue:1
@@ -142,11 +143,11 @@ def delete_aws_archive(archive_id, aws_vault, aws_account_id):
         return None
 
 def delete_redundant_archives(db, aws_vault_name, aws_account_id):
-    redundant_archives = backupmongo.get_archives_to_delete(db)
+    redundant_archives = cupocore.mongoops.get_archives_to_delete(db)
     for arch in redundant_archives:
         deleted_aws = delete_aws_archive(arch["_id"], aws_vault_name, aws_account_id)
         if deleted_aws:
-            backupmongo.delete_archive_document(db,arch["_id"])
+            cupocore.mongoops.delete_archive_document(db,arch["_id"])
             logging.debug("Deleted archive with ID {0} from local database".format(arch["_id"]))
         else:
             logging.info("AWS deletion failed; not removing database entry")
@@ -182,7 +183,7 @@ def add_new_vault(db, vault_name):
         aws_vault_arn = aws_cli_op_json["location"]
 
         logging.info("Successfully created AWS vault {0}:\n {1}".format(vault_name, aws_vault_arn))
-        backupmongo.create_vault_entry(db, aws_vault_arn, vault_name)
+        cupocore.mongoops.create_vault_entry(db, aws_vault_arn, vault_name)
         logging.info("Created database entry for vault {0}".format(vault_name))
         return 1
 
@@ -194,45 +195,7 @@ def add_new_vault(db, vault_name):
 
 if __name__ == "__main__":
 
-    arg_parser = argparse.ArgumentParser(description='A tool to manage differential file uploads to an Amazon Glacier repository')
-    arg_parser.add_argument('--account-id', help='The AWS ID of the account that owns the specified vault',
-                            metavar='aws_acct_id', default='-', required=True)
-    arg_parser.add_argument('--aws-profile',
-                            help='If supplied, the "--profile" switch will be passed to the AWS CLI for credential management.',
-                            metavar='aws-profile')
-    arg_parser.add_argument('--database',
-                            help='The database name to connect to.',
-                            metavar='db_name', required=True)
-    arg_parser.add_argument('--debug',
-                            help='If passed, the default logging level will be set to DEBUG.',
-                            action='store_true')
-    arg_parser.add_argument('--logging-dir',
-                            help='The log will be stored in this directory, if passed.',
-                            metavar='logging_dir',
-                            default=os.path.expanduser('~'))
-
-    subparsers = arg_parser.add_subparsers(help="Run HCRBackup backup|new-vault --help for more info on each command.")
-    arg_parser_backup = subparsers.add_parser('backup', help="Execute incremental backup of a directory to an Amazon Glacier \
-                                              vault, and prune any outdated archives.")
-    arg_parser_backup.add_argument('backup_directory', help='The top directory to back up', metavar='top_dir')
-    arg_parser_backup.add_argument('backup_vault_name', help='The name of the vault to upload the archive to', metavar='vault_name')
-    arg_parser_backup.add_argument('--no-backup',
-                            help='If passed, the backup operation will not take place, going straight to the maintenance operations',
-                            action='store_true')
-    arg_parser_backup.add_argument('--no-prune',
-                            help='If passed, the process of finding and removing old archives will not take place.',
-                            action='store_true')
-    arg_parser_backup.add_argument('--dummy-upload',
-                            help='If passed, the archives will not be uploaded, but a dummy AWS URI and archive ID will be generated. Use for testing only.',
-                            action='store_true')
-
-    arg_parser_new_vault = subparsers.add_parser('new-vault', help="Add a new \
-     vault to the specified Glacier account, and register it with the local database.")
-    arg_parser_new_vault.add_argument('new_vault_name', help='The name of the new vault to create.',
-                                      metavar='new_vault_name')
-
-
-    args = arg_parser.parse_args()
+    s;kmsjd
 
     logFormat = """%(asctime)s:%(levelname)s:%(module)s: %(message)s"""
     if args.debug:
@@ -245,11 +208,11 @@ if __name__ == "__main__":
     aws_account_id = args.account_id
     db_name = args.database
     aws_profile = args.aws_profile or None
-    db_client, db = backupmongo.connect(db_name)
+    db_client, db = cupocore.mongoops.connect(db_name)
 
     # If we're just adding a new vault...
-    # TODO:50 There has to be a better way to process the args command...
-    if "new_vault_name" in dir(args):
+    # #ToMarkClosed:0 There has to be a better way to process the args command...
+    if hasattr(args, "new_vault_name")
         if args.new_vault_name:
             add_new_vault(db, args.new_vault_name)
             exit()
@@ -290,7 +253,7 @@ if __name__ == "__main__":
             backup_subdir_rel_filename = subdir_to_backup + ".7z"
 
             # Find most recent version of this file in Glacier
-            most_recent_version = backupmongo.get_most_recent_version_of_archive(db, backup_subdir_rel_filename)
+            most_recent_version = cupocore.mongoops.get_most_recent_version_of_archive(db, backup_subdir_rel_filename)
 
             if most_recent_version:
                 logging.info("Archive for this path exists in local database")
@@ -310,10 +273,10 @@ if __name__ == "__main__":
                 upload_status = upload_archive(tmp_archive_fullpath, aws_vault_name, archive_hash, aws_account_id, args.dummy_upload)
                 if upload_status:
                     # Get vault arn:
-                    aws_vault_arn = backupmongo.get_vault_by_name(db, aws_vault_name)["arn"]
+                    aws_vault_arn = cupocore.mongoops.get_vault_by_name(db, aws_vault_name)["arn"]
 
                     # Store the info about the newly uploaded file in the database
-                    backupmongo.create_archive_entry(db,
+                    cupocore.mongoops.create_archive_entry(db,
                                                      backup_subdir_rel_filename,
                                                      aws_vault_arn,
                                                      upload_status["archiveId"],
@@ -335,10 +298,10 @@ if __name__ == "__main__":
             # This could only be the case when we've uploaded a new version of an archive, thereby
             # making an old version irrelevant - so we only need to look for archives with this path.
             if not args.no_prune:
-                old_archives = backupmongo.get_old_archives(db, backup_subdir_rel_filename, aws_vault_name)
+                old_archives = cupocore.mongoops.get_old_archives(db, backup_subdir_rel_filename, aws_vault_name)
                 for arch in old_archives:
                     logging.info("Marking archive with ID {0} as redundant".format(arch["_id"]))
-                    backupmongo.mark_archive_for_deletion(db, arch["_id"])
+                    cupocore.mongoops.mark_archive_for_deletion(db, arch["_id"])
             else:
                 logging.info("Not marking old versions")
 
