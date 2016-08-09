@@ -18,6 +18,7 @@ To grab the latest release, download the source. It's all Python - no compilatio
 
 **Latest Version**: {{ site.github.releases.name }}
 {{ site.github.releases.url }}
+{{ site.github.releases['url'] }}
 
 [Download .tar]({{ site.github.releases.tarball_url }})
 //
