@@ -19,7 +19,7 @@ To grab the latest release, download the source. It's all Python - no compilatio
 **Latest Version**: {{ site.github.releases.name }}
 URL:
 
-{{ site.github.releases.url }}
+{{ site.github.releases[0].url }}
 
 "URL":
 
