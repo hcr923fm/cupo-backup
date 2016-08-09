@@ -9,10 +9,10 @@
 locale                   : "en"
 title                    : "Cupo"
 title_separator          : "-"
-name                     : "Callum McLEan"
+name                     : "Callum McLean"
 description              : "An amazing website."
 url                      : "http://calmcl1.github.io" # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
-baseurl                  : "/cupo-backup"# the subpath of your site, e.g. "/blog"
+baseurl                  : "/cupo-backup" # the subpath of your site, e.g. "/blog"
 repository               : "calmcl1/cupo-backup" # GitHub username/repo-name e.g. "mmistakes/minimal-mistakes"
 teaser                   : # filename of teaser fallback teaser image placed in /images/, .e.g. "500x300.png"
 # breadcrumbs            : false # true, false (default)
@@ -61,10 +61,10 @@ analytics:
 
 # Site Author
 author:
-  name             : "Your Name"
-  avatar           : "bio-photo.jpg"
-  bio              : "I am an amazing person."
-  location         : "Somewhere"
+  name             : "Callum McLean"
+  avatar           : #"bio-photo.jpg"
+  bio              : "I wrote Cupo to make a radio station work. Now it's for everyone!"
+  location         : "Manchester, UK"
   email            :
   uri              :
   bitbucket        :
