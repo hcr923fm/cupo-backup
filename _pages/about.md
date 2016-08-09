@@ -13,7 +13,7 @@ By default, *Cupo* will create an archive for each directory in a given tree, an
 
 A backup archive is considered to be obsolete when:
 
-* It is older than a given threshold (by default, three months, as the is the Glacier minimum archive term)
+* It is older than a given threshold (by default, three months, as this is the Glacier minimum archive term)
 * AND there are at least **x** more recent versions of that archive in Glacier (by default, 3)
 
 ## How does Cupo work?
