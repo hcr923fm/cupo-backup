@@ -12,6 +12,7 @@ That way, simply downloading the latest version of each backed-up file will give
 By default, *Cupo* will create an archive for each directory in a given tree, and upload that directory to Amazon Glacier. Each time a file in that directory changes, *Cupo* will re-archive that directory and upload the new version. Once a backup archive has become obsolete, it is removed from Glacier.
 
 A backup archive is considered to be obsolete when:
+
 * It is older than a given threshold (by default, three months, as the is the Glacier minimum archive term)
 * AND there are at least **x** more recent versions of that archive in Glacier (by default, 3)
 
