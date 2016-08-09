@@ -14,8 +14,10 @@ author_profile: false
 Find *Cupo* on [GitHub]({{ site.github.repository_url }}).
 
 ### Latest Release
-To grab the latest release, download the source. It's all Python - no compilation required!.
+To grab the latest release, download the source. It's all Python - no compilation required!
 
-**Latest Version: {{ site.github.releases.name }} **
+** Latest Version: {{ site.github.releases.name }} **
 
-[Download .tar]({{ site.github.releases.tarball_url }}) // [Download .zip]({{ site.github.releases.zipball_url }})
+[Download .tar]({{ site.github.releases.tarball_url }})
+//
+[Download .zip]({{ site.github.releases.zipball_url }})
