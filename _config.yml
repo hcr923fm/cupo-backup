@@ -212,10 +212,9 @@ compress_html:
     envs: development
 
 defaults:
-  # _posts
   - scope:
       path: ""
-      type: posts
+      type: pages
     values:
       comments: false
       layout: single
