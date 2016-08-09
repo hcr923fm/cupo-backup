@@ -73,7 +73,7 @@ author:
   flickr           :
   facebook         :
   foursquare       :
-  github           :
+  github           : "http://github.com/calmcl1"
   google_plus      :
   keybase          :
   instagram        :
@@ -210,3 +210,16 @@ compress_html:
   clippings: all
   ignore:
     envs: development
+
+defaults:
+  # _posts
+  - scope:
+      path: ""
+      type: posts
+    values:
+      comments: false
+      layout: single
+      author_profile: false
+      read_time: false
+      share: false
+      related: false
