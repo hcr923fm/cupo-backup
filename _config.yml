@@ -62,7 +62,7 @@ analytics:
 # Site Author
 author:
   name             : "Callum McLean"
-  avatar           : "avatar.jpeg"
+  avatar           : {{ site.github.owner_gravatar_url }}
   bio              : "I wrote Cupo to make a radio station work. Now it's for everyone!"
   location         : "Manchester, UK"
   email            :
