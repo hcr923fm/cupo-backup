@@ -8,7 +8,7 @@ author_profile: false
 
 ## Welcome to Cupo!
 
-*Cupo* is an incremental backup system.
+*Cupo* is an incremental backup system, designed to back up a file tree to Amazon Glacier, uploading only the files that have changed between backups and maintaining redunandant versions for retrieval.
 
 ## Getting Cupo
 Find *Cupo* on [GitHub]({{ site.github.repository_url }}).
