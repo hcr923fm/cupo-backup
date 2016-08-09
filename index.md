@@ -11,7 +11,7 @@ author_profile: false
 *Cupo* is an incremental backup system.
 
 ## Getting Cupo
-Find *Cupo* on [GitHub]({% site.github.repository_url %}).
+Find *Cupo* on [GitHub]({{ site.github.repository_url }}).
 
 ### Latest Release
 To grab the latest release
