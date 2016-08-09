@@ -14,4 +14,5 @@ author_profile: false
 Find *Cupo* on [GitHub]({{ site.github.repository_url }}).
 
 ### Latest Release
-To grab the latest release
+To grab the latest release, download the tarball.
+**Latest Version: {{ site.github.releases.latest.name }}** 
