@@ -17,7 +17,12 @@ Find *Cupo* on [GitHub]({{ site.github.repository_url }}).
 To grab the latest release, download the source. It's all Python - no compilation required!
 
 **Latest Version**: {{ site.github.releases.name }}
+URL:
+
 {{ site.github.releases.url }}
+
+"URL":
+
 {{ site.github.releases['url'] }}
 
 [Download .tar]({{ site.github.releases.tarball_url }})
