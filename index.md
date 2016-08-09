@@ -21,3 +21,5 @@ To grab the latest release, download the source. It's all Python - no compilatio
 [Download .tar]({{ site.github.releases.tarball_url }})
 //
 [Download .zip]({{ site.github.releases.zipball_url }})
+
+{{ site.github.releases }}
