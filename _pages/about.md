@@ -31,4 +31,4 @@ A backup archive is considered to be obsolete when:
 
 ### Who created Cupo?
 
-*Cupo* was created by Callum McLean in his spare time. He spends most of his time travelling around Europe as a vision mixer, but sometimes writes software when noboy's invited him out for drinks.
+*Cupo* was created by Callum McLean in his spare time. He spends most of his time travelling around Europe as a vision mixer, but sometimes writes software when nobody's invited him out for drinks.
