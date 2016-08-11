@@ -55,6 +55,7 @@ Now, it's as simple as specifying a directory to back up and a vault!
 `cupo.py --account-id AWS_ACCOUNT_ID --database DATABASE_NAME backup TOP_DIR VAULT_NAME`
 
 where:
+
 * `TOP_DIR` is the root directory to back up.
 * `VAULT_NAME` is the Glacier vault to back up to. It will not be created if it doesn't exist - use `cupo.py new-vault` first.
 
