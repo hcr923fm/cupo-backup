@@ -3,4 +3,4 @@ main:
   - title: "About Cupo"
     url: "https://calmcl1.github.com/cupo-backup/about/"
   - title: "Quick Start"
-    url: "{% base_path %}quick_start"
+    url: "https://calmcl1.github.com/cupo-backup/quick_start"
