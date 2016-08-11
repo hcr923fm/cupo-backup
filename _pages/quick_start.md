@@ -1,6 +1,7 @@
 ---
 permalink: /quick_start/
 ---
+{% include_toc %}
 
 # Getting Started
 So, you want to start a backup system...
