@@ -15,7 +15,6 @@ import cupocore
 # TODO:20 Add network rate limiting issue:1
 # TODO:0 Add a way of specifying the amount of redundant backups that should be kept issue:2
 # TODO:30 Specify the minimum amount of time that a backup should be kept for if there are more than <min amount> of backups remaining. issue:3
-# DONE:10 Use a config file! issue:5
 
 
 # Only the *files* in a given directory are archived, not the subdirectories.
