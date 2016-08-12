@@ -1,5 +1,5 @@
 ---
-permalink: /quick_start/
+permalink: /quick-start/
 ---
 {% include toc %}
 
