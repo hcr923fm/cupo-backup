@@ -12,7 +12,7 @@ author_profile: true
 
 ## Grabbing Cupo
 To grab the latest release, download the source. It's all Python - no compilation required! Just [download and install the prerequisites](https://calmcl1.github.com/cupo-backup/quick-start#installing), clone the repo, and you're good to go!
-Find Cupo on [GitHub]({{ site.github.repository_url }}).
+Find Cupo on <i class"fa fa-fw fa-github">[GitHub]({{ site.github.repository_url }})</i>.
 
 ### Latest Version: [{{ site.github.releases[0].name }}]({{ site.github.releases[0].url }}){: .btn}
 
