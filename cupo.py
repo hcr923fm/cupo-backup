@@ -203,7 +203,7 @@ if __name__ == "__main__":
     # Set up some logs - one rotating log, which contains all the debug output
     # and a STDERR log at the specified level.
 
-    logger = logging.getLogger("cupobackup{0}".format(os.getpid()))
+    logger = logging.Logger("cupobackup{0}".format(os.getpid()))
     log_rotating = logging.handlers.RotatingFileHandler(filename=os.path.join(args.logging_dir,'.cupoLog'),
                                                         maxBytes=10485760, # 10MB
                                                         backupCount=5)
@@ -223,19 +223,36 @@ if __name__ == "__main__":
     logger.addHandler(log_rotating)
     logger.addHandler(log_stream)
 
+    # If we're only spitting out a sample config file...
+
+    if args.subparser_name == "sample-config":
+        cupocore.cmdparser.create_config_file(args.sample_file_location)
+        exit()
+
+
     # On we go!
+
+    if not hasattr(args, "account_id") or not args.account_id:
+        logger.error("AWS account ID has not been supplied. Use '--account-id' or specify the 'account_id' option in a config file.")
+        exit(1)
+    if not hasattr(args, "database") or not args.database:
+        logger.error("MongoDB database has not been supplied. Use '--database' or specify the 'database' option in a config file.")
+        exit(1)
 
     aws_account_id = args.account_id
     db_name = args.database
     aws_profile = args.aws_profile or None
     db_client, db = cupocore.mongoops.connect(db_name)
 
-    # If we're just adding a new vault...
-    # DONE:0 There has to be a better way to process the args command...
+    # If we're only adding a new vault...
+
     if args.subparser_name == "new-vault":
         if args.new_vault_name:
             add_new_vault(db, args.new_vault_name)
-            exit()
+        else:
+            logger.error("New vault name not supplied. Cannot create vault.")
+        exit()
+
 
     # Top of directory to backup
     root_dir = args.backup_directory
