@@ -19,4 +19,4 @@ To grab the latest release, download the source. It's all Python - no compilatio
 Latest Version: **{{ site.github.releases[0].name }}**
 [Download .tar]({{ site.github.releases[0].tarball_url }})
 //
-[Download .zip]({{ site.github.releases[0].zipball_url }})
+[Download .zip]({{ site.github.releases[0].zipball_url }}){: .notice}
