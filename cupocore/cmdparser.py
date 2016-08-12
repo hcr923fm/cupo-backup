@@ -59,6 +59,9 @@ def __load_config_file_args(config_file_path, options_namespace):
             setattr(options_namespace, k, config_opts[k])
 
 def parse_args():
+    # Make sure we're on the same logger as the main program
+    logger = logging.getLogger("cupobackup{0}".format(os.getpid()))
+
     # Creating a separate object so that both argparse'd switches and config file
     # options can be accessed from the same object
     cmd_opts = cmdOptions()
@@ -66,13 +69,13 @@ def parse_args():
     if os.path.exists(cmd_opts.config_file):
         __load_config_file_args(cmd_opts.config_file, cmd_opts)
     else:
-        logging.error("Config file does not exist. Use '--config-file' to specify a location or create a file at ~/.cupo.json")
+        logger.error("Config file does not exist. Use '--config-file' to specify a location or create a file at ~/.cupo.json")
         exit(1)
 
     if not hasattr(cmd_opts, "account_id") or not cmd_opts.account_id:
-        logging.error("AWS account ID has not been supplied. Use '--account-id' or specify the 'account_id' option in a config file.")
+        logger.error("AWS account ID has not been supplied. Use '--account-id' or specify the 'account_id' option in a config file.")
         exit(1)
     if not hasattr(cmd_opts, "database") or not cmd_opts.database:
-        logging.error("MongoDB database has not been supplied. Use '--database' or specify the 'database' option in a config file.")
+        logger.error("MongoDB database has not been supplied. Use '--database' or specify the 'database' option in a config file.")
         exit(1)
     return cmd_opts

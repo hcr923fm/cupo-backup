@@ -52,6 +52,6 @@ where:
 * `TOP_DIR` is the root directory to back up.
 * `VAULT_NAME` is the Glacier vault to back up to. It will not created if it doesn't exist - use `cupo.py new-vault` first.
 
-There isn't much output on the terminal, but a log will created that you can `tail -f` if you wish. The default log location is `~/.CupoLog`, but this can be changed with the `--logging-dir` switch.
+A full debug log will created that you can `tail -f` if you wish, or submit in case of errors. The default log location is `~/.CupoLog`, but this can be changed with the `--logging-dir` switch.
 
 For more info, use `cupo.py [backup | new-vault] -h`.
