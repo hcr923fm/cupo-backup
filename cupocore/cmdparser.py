@@ -22,7 +22,7 @@ def __parse_cmd_args(options_namespace):
                             help='The log will be stored in this directory, if passed.',
                             default=os.path.expanduser('~'))
     arg_parser.add_argument('--config-file',
-                            help='Loads options from a config file.', default=os.path.expanduser("~/cupo.json"))
+                            help='Loads options from a config file.')
 
     subparsers = arg_parser.add_subparsers(help="Run HCRBackup backup|new-vault --help for more info on each command.",
                                            dest="subparser_name")
@@ -45,6 +45,11 @@ def __parse_cmd_args(options_namespace):
     arg_parser_new_vault.add_argument('new_vault_name', help='The name of the new vault to create.',
                                       metavar='new_vault_name')
 
+    arg_parser_new_config = subparsers.add_parser('sample-config', help="Create a sample configuration file \
+    that can be passed to Cupo by --config-file.")
+    arg_parser_new_config.add_argument('sample_file_location', help='The path and filename for the generated \
+                                       config file.', metavar='config_location')
+
 
     args = arg_parser.parse_args(namespace=options_namespace)
 
@@ -59,23 +64,28 @@ def __load_config_file_args(config_file_path, options_namespace):
             setattr(options_namespace, k, config_opts[k])
 
 def parse_args():
-    # Make sure we're on the same logger as the main program
-    logger = logging.getLogger("cupobackup{0}".format(os.getpid()))
-
     # Creating a separate object so that both argparse'd switches and config file
     # options can be accessed from the same object
     cmd_opts = cmdOptions()
     __parse_cmd_args(cmd_opts)
-    if os.path.exists(cmd_opts.config_file):
-        __load_config_file_args(cmd_opts.config_file, cmd_opts)
-    else:
-        logger.error("Config file does not exist. Use '--config-file' to specify a location or create a file at ~/.cupo.json")
-        exit(1)
-
-    if not hasattr(cmd_opts, "account_id") or not cmd_opts.account_id:
-        logger.error("AWS account ID has not been supplied. Use '--account-id' or specify the 'account_id' option in a config file.")
-        exit(1)
-    if not hasattr(cmd_opts, "database") or not cmd_opts.database:
-        logger.error("MongoDB database has not been supplied. Use '--database' or specify the 'database' option in a config file.")
-        exit(1)
+    if hasattr(cmd_opts, "config_file") and cmd_opts.config_file:
+        print "Config file:", cmd_opts.config_file
+        if os.path.exists(cmd_opts.config_file):
+            __load_config_file_args(cmd_opts.config_file, cmd_opts)
+        else:
+            logging.error("Config file does not exist. Use '--config-file' to specify a location or create a file at ~/.cupo.json")
+            exit(1)
     return cmd_opts
+
+def create_config_file(file_location):
+    config_opts = {"database": "",
+                   "vault_name": "",
+                   "account_id": "",
+                   "aws_profile": "",
+                   "debug": False,
+                   "logging_dir": "",
+                   "backup_directory": ""
+                   }
+
+    with open(file_location, "w") as f:
+        json.dump(config_opts, f, indent=4, separators=(",", ": "))
