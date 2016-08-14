@@ -4,7 +4,7 @@ author_profile: true
 ---
 {% include base_path %}
 
-# Cupo
+# Cupo - Incremental Backup for Amazon Glacier
 
 ## Welcome to Cupo!
 
