@@ -29,7 +29,7 @@ To use an older release of Cupo, download a source archive from the list below.
 
 {% for release in site.github.releases %}
 
-#### {{ release.name }}
+### {{ release.name }}
 
 **Download tar.gz archive**: [{{ release.name }}.tar.gz]({{ release.tarball_url }})
 
