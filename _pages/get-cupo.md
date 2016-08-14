@@ -19,7 +19,7 @@ The core of Cupo is all Python, so just grab a copy of the source. You can eithe
 {% include feature_row type="center" %}
 
 Or clone the repository:
-```bash
+```
 git clone https://github.com/calmcl1/cupo-backup.git
 ```
 

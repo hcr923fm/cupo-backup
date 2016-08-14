@@ -31,7 +31,7 @@ and supply your AWS credentials.
 It's all Python, so no compilation required!
 Open a terminal, `cd` into your favourite directory and run:
 
-```bash
+```
 git clone https://github.com/calmcl1/cupo-backup.git; cd cupo-backup
 ```
 
