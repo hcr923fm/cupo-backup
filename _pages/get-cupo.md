@@ -37,4 +37,4 @@ To use an older release of Cupo, download a source archive from the list below.
 
 **Release info on GitHub** : [Cupo {{ release.name }}]({{ release.url }})
 
-{% endfor% }
+{% endfor %}
