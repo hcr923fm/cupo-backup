@@ -16,7 +16,11 @@ feature_row:
 
 The core of Cupo is all Python, so just grab a copy of the source. You can either clone the GitHub repository or download an archive.
 
-{% include feature_row type="center" %}
+### Windows users
+Download the source zip file: [![Zip Archive download](https://calmcl1.github.io/cupo-backup/images/archive-zip.png)](site.github.releases[0].zipball_url)
+
+### Windows users
+Download the source tarball: [![TGZ Archive download](https://calmcl1.github.io/cupo-backup/images/archive-tgz.png)](site.github.releases[0].tarball_url)
 
 Or clone the repository:
 ```
@@ -35,6 +39,6 @@ To use an older release of Cupo, download a source archive from the list below.
 
 **Download zip archive**: [{{ release.name }}.zip]({{ release.zipball_url }})
 
-**Release info on GitHub** : [Cupo {{ release.name }}]({{ release.url }})
+**Release info on GitHub**: [Cupo {{ release.name }}]({{ release.url }})
 
 {% endfor %}
