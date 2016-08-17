@@ -19,10 +19,12 @@ The core of Cupo is all Python, so just grab a copy of the source. You can eithe
 ### Windows users
 Download the source zip file: [![Zip Archive download](https://calmcl1.github.io/cupo-backup/images/archive-zip.png)](site.github.releases[0].zipball_url)
 
-### Windows users
-Download the source tarball: [![TGZ Archive download](https://calmcl1.github.io/cupo-backup/images/archive-tgz.png)](site.github.releases[0].tarball_url)
+### \*nix users
+Download the source tarball: [![TGZ Archive download](archive-tgz.png)](site.github.releases[0].tarball_url)
 
-Or clone the repository:
+### Git users
+
+Just clone the repository:
 ```
 git clone https://github.com/calmcl1/cupo-backup.git
 ```
