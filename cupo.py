@@ -11,7 +11,6 @@ import datetime, time
 import logging, logging.handlers
 import cupocore
 
-
 # TODO:50 Move old archive detection into own method, and add unique path detection, so not only triggered when adding new archives.
 # TODO:20 Add network rate limiting issue:1
 # TODO:0 Add a way of specifying the amount of redundant backups that should be kept issue:2
