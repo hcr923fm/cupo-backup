@@ -5,11 +5,11 @@ import os, os.path
 import json
 import subprocess
 import tempfile
-import botocore.utils
+import botocore, botocore.utils
+import boto3
 import datetime, time
 import logging, logging.handlers
 import cupocore
-
 
 # TODO:50 Move old archive detection into own method, and add unique path detection, so not only triggered when adding new archives.
 # TODO:20 Add network rate limiting issue:1
@@ -75,28 +75,15 @@ def archive_directory(top_dir, subdir, tmpdir):
 def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id, dummy=False):
     logger.info("Uploading {0} to vault {1}".format(archive_path, aws_vault))
 
-    devnull = open(os.devnull, "w")
-
     try:
         if not dummy:
-                cmd = ["aws", "glacier", "upload-archive", "--account-id", aws_account_id]
-                if aws_profile: cmd.extend(["--profile", aws_profile])
-                cmd.extend(["--checksum", archive_treehash, "--vault-name",
-                            aws_vault,"--body", archive_path])
-                aws_cli_op = subprocess.check_output(cmd, stderr=devnull)
-                devnull.close()
-
-                aws_cli_op = aws_cli_op.replace("\r\n", "")
-
-                # Returned fields from upload:
-                # location -> (string)
-                # The relative URI path of the newly added archive resource.
-                # checksum -> (string)
-                # The checksum of the archive computed by Amazon Glacier.
-                # archiveId -> (string)
-                # The ID of the archive. This value is also included as part of the location.
-
-                aws_params = json.loads(aws_cli_op)
+            response = {}
+            with open(archive_path, 'rb') as body:
+                response = boto_client.upload_archive(vaultName=aws_vault,
+                                        accountId=aws_account_id,
+                                        archiveDescription=archive_path,
+                                        body=body)
+            aws_params = response
 
         else:
             # This is a dummy upload, for testing purposes. Create a fake
@@ -115,29 +102,23 @@ def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id, du
                                                               params=aws_params))
         return aws_params
 
-    except subprocess.CalledProcessError, e:
-        logger.info("Upload failed! Error: {err.returncode}\n \
-                      \t{err.message}\n\t{err.cmd}\n\t{err.output}".format(err=e))
+    except Exception, e:
+        logger.info("Upload failed!)
         return None
 
 def delete_aws_archive(archive_id, aws_vault, aws_account_id):
     logger.info("Deleting archive with id {0} from vault {1}".format(
         archive_id, aws_vault))
 
-    devnull = open(os.devnull, "w")
     try:
-        cmd = ["aws", "glacier", "delete-archive", "--account-id", aws_account_id]
-        if aws_profile: cmd.extend(["--profile", aws_profile])
-        cmd.extend(["--archive-id", archive_id])
-
-        aws_cli_op = subprocess.check_output(cmd, stderr=devnull)
+        boto_client.delete_archive(vaultName=aws_vault,
+                                   archiveId=archive_id)
 
         logger.info("Successfully deleted archive from AWS")
         return 1
 
-    except subprocess.CalledProcessError, e:
-        logger.info("Failed to delete archive from AWS! Error: {err.returncode}\n \
-                      \t{err.message}\n\t{err.cmd}\n\t{err.output}".format(err=e))
+    except Exception, e:
+        logger.info("Failed to delete archive from AWS!)
         return None
 
 def delete_redundant_archives(db, aws_vault_name, aws_account_id):
@@ -164,7 +145,7 @@ def list_dirs(top_dir):
             logger.info("Found subdirectory {0}".format(s))
     return dirs
 
-def add_new_vault(db, vault_name):
+def add_new_vault(db, aws_account_id, vault_name):
     logger.info("Creating new vault: {0}".format(vault_name))
     devnull = open(os.devnull, "w")
     try:
@@ -173,21 +154,21 @@ def add_new_vault(db, vault_name):
         cmd.extend(["--vault-name", vault_name])
         aws_cli_op = subprocess.check_output(cmd, stderr=devnull)
 
+        response = boto_client.create_vault(accountId=aws_account_id,
+                                            vaultName=vault_name)
+
         # Returned fields from create-vault:
         # location -> (string)
         # The URI of the vault that was created.
-        aws_cli_op = aws_cli_op.replace("\r\n", "")
-        aws_cli_op_json = json.loads(aws_cli_op)
-        aws_vault_arn = aws_cli_op_json["location"]
+        aws_vault_arn = response["location"]
 
         logger.info("Successfully created AWS vault {0}:\n {1}".format(vault_name, aws_vault_arn))
         cupocore.mongoops.create_vault_entry(db, aws_vault_arn, vault_name)
         logger.info("Created database entry for vault {0}".format(vault_name))
         return 1
 
-    except subprocess.CalledProcessError, e:
-        logger.error("Failed to create new vault. Error: {err.returncode}\n \
-                      \t{err.message}\n\t{err.cmd}\n\t{err.output}".format(err=e))
+    except Exception, e:
+        logger.error("Failed to create new vault!)
         return None
 
 
@@ -242,6 +223,9 @@ if __name__ == "__main__":
     db_name = args.database
     aws_profile = args.aws_profile or None
     db_client, db = cupocore.mongoops.connect(db_name)
+
+    boto_session = boto3.Session(profile_name = aws_profile)
+    boto_client = boto_session.client('glacier')
 
     # If we're only adding a new vault...
 
