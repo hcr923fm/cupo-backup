@@ -21,6 +21,15 @@ import time, datetime
 #     "arn": "aws://AWS-VAULT-ARN-123456789",
 #     "name": "vault name",
 # })
+#
+#
+# db.vaults.insert_one({
+#     "vault_arn":                    "aws://AWS-VAULT-ARN-123456789",
+#     "_id":                          "AWS-JOB-ID-abcdefghijklmnopqrstuvwxyz"
+#     "job_type":                     "retrieval"
+#     "job_retrieval_destination":    "/path/to/download" Only if job_type is 'retrieval'
+#     "job_last_polled_time":         0123456789
+# })
 
 
 def create_backup_database(database_name, db_client, drop_existing=True):
@@ -39,6 +48,7 @@ def create_backup_database(database_name, db_client, drop_existing=True):
     db = db_client[database_name]
     db.create_collection('archives')
     db.create_collection('vaults')
+    db.create_collection('jobs')
 
     return db
 
@@ -50,7 +60,7 @@ def create_vault_entry(db, vault_arn, vault_name):
 
     # If not, let's create one with the specified info...
     doc_vault = {}
-    doc_vault["arn"] = vault_arn
+    doc_vault["arn"] =  vault_arn
     doc_vault["name"] = vault_name
 
     return db["vaults"].insert_one(doc_vault).inserted_id
@@ -61,17 +71,27 @@ def create_archive_entry(db, archived_dir_path, vault_arn, aws_archive_id,
     # Find an entry in the archives list that matches the path and vault arn
     # that we are uploading to..
     doc_arch = {}
-    doc_arch["path"] = archived_dir_path
-    doc_arch["vault_arn"] = vault_arn
-    doc_arch["_id"] = aws_archive_id
-    doc_arch["treehash"] = archive_treehash
-    doc_arch["size"] = archive_size
-    doc_arch["uploaded_time"] = time.time()
-    doc_arch["aws_URI"] = aws_uri
-    doc_arch["to_delete"] = 0
+    doc_arch["path"] =              archived_dir_path
+    doc_arch["vault_arn"] =         vault_arn
+    doc_arch["_id"] =               aws_archive_id
+    doc_arch["treehash"] =          archive_treehash
+    doc_arch["size"] =              archive_size
+    doc_arch["uploaded_time"] =     time.time()
+    doc_arch["aws_URI"] =           aws_uri
+    doc_arch["to_delete"] =         0
 
     # Add the entry.
     return db['archives'].insert(doc_arch)
+
+def create_retrieval_entry(db, vault_arn, aws_job_id, download_path):
+    doc_entry = {}
+    doc_entry["_id"] =                          aws_job_id
+    doc_entry["vault_arn"] =                    vault_arn
+    doc_entry["job_type"] =                     "retrieval"
+    doc_entry["job_retrieval_destination"] =    download_path
+    doc_entry["job_last_polled_time"] =         time.time()
+
+    return db['jobs'].insert(doc_entry)
 
 def get_most_recent_version_of_archive(db, path):
     return db["archives"].find_one(
@@ -83,7 +103,7 @@ def get_old_archives(db, archived_dir_path, vault_name):
 
     deadline_dt = datetime.datetime.utcnow() - datetime.timedelta(days=93)
     deadline_ts = time.mktime(deadline_dt.timetuple())
-    cursor = db["archives"].find({"to_delete":0,
+    cursor = db["archives"].find({"to_delete": 0,
                                   "path": archived_dir_path,
                                   "uploaded_time":
                                   {"$lt": deadline_ts}
@@ -92,17 +112,13 @@ def get_old_archives(db, archived_dir_path, vault_name):
                                  skip=3)
 
     old_archives = []
-    for arch in cursor:
-        old_archives.append(arch)
-
+    for arch in cursor: old_archives.append(arch)
     return old_archives
 
 def mark_archive_for_deletion(db, archive_id):
     db["archives"].find_one_and_update({"_id": archive_id},
                                        {"$set":
-                                        {
-                                           "to_delete": 1
-                                           }
+                                        {"to_delete": 1}
                                         })
 
 def get_archives_to_delete(db):
