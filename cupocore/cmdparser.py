@@ -40,6 +40,14 @@ def __parse_cmd_args(options_namespace):
                             help='If passed, the archives will not be uploaded, but a dummy AWS URI and archive ID will be generated. Use for testing only.',
                             action='store_true')
 
+    arg_parser_retrieve = subparsers.add_parser('retrieve', help="Retrieve a \
+     directory tree from the specified vault and download it to the local system.")
+    arg_parser_retrieve.add_argument('vault_name', help='The name of the vault to download from.')
+    arg_parser_retrieve.add_argument('top_path', help="The relative directory of the top directory to download.\
+                                     Use --list for a list of directories available.")
+    arg_parser_retrieve.add_argument('download_location', help="The local directory to download the file tree to.")
+    arg_parser_retrieve.add_argument('--list', help="Print a list of the directories available for download.") # TODO: Make this work
+
     arg_parser_new_vault = subparsers.add_parser('new-vault', help="Add a new \
      vault to the specified Glacier account, and register it with the local database.")
     arg_parser_new_vault.add_argument('new_vault_name', help='The name of the new vault to create.',
