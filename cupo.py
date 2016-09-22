@@ -118,7 +118,7 @@ def delete_aws_archive(archive_id, aws_vault, aws_account_id):
         return 1
 
     except Exception, e:
-        logger.info("Failed to delete archive from AWS!)
+        logger.info("Failed to delete archive from AWS!")
         return None
 
 def delete_redundant_archives(db, aws_vault_name, aws_account_id):
