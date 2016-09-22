@@ -168,7 +168,7 @@ def add_new_vault(db, aws_account_id, vault_name):
         return 1
 
     except Exception, e:
-        logger.error("Failed to create new vault!)
+        logger.error("Failed to create new vault!")
         return None
 
 def init_logging():
