@@ -103,7 +103,7 @@ def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id, du
         return aws_params
 
     except Exception, e:
-        logger.info("Upload failed!)
+        logger.info("Upload failed!")
         return None
 
 def delete_aws_archive(archive_id, aws_vault, aws_account_id):
