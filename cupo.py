@@ -171,15 +171,7 @@ def add_new_vault(db, aws_account_id, vault_name):
         logger.error("Failed to create new vault!)
         return None
 
-
-if __name__ == "__main__":
-
-    # Parse the options from the command line and from the config file too.
-    # Options specified on the command line will override anything specified
-    # in the config file.
-
-    args = cupocore.cmdparser.parse_args()
-
+def init_logging():
     # Set up some logs - one rotating log, which contains all the debug output
     # and a STDERR log at the specified level.
 
@@ -202,6 +194,19 @@ if __name__ == "__main__":
 
     logger.addHandler(log_rotating)
     logger.addHandler(log_stream)
+    return logger
+
+
+if __name__ == "__main__":
+
+    # Parse the options from the command line and from the config file too.
+    # Options specified on the command line will override anything specified
+    # in the config file.
+
+    args = cupocore.cmdparser.parse_args()
+
+    # Start the logger
+    logger = init_logging()
 
     # If we're only spitting out a sample config file...
 
