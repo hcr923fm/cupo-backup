@@ -236,7 +236,7 @@ if __name__ == "__main__":
 
     if args.subparser_name == "new-vault":
         if args.new_vault_name:
-            add_new_vault(db, args.new_vault_name)
+            add_new_vault(db, aws_account_id, args.new_vault_name)
         else:
             logger.error("New vault name not supplied. Cannot create vault.")
         exit()
