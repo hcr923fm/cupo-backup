@@ -142,7 +142,7 @@ def list_dirs(top_dir):
     for dirname, subdirs, files in os.walk(top_dir):
         for s in subdirs:
             dirs.append(os.path.relpath(os.path.join(dirname, s), top_dir))
-            logger.info("Found subdirectory {0}".format(os.path.join(dirname, s), top_dir)))
+            logger.info("Found subdirectory {0}".format(os.path.join(dirname, s), top_dir))
     return dirs
 
 def add_new_vault(db, aws_account_id, vault_name):
