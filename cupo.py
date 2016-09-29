@@ -9,6 +9,7 @@ import botocore.utils
 import datetime, time
 import logging, logging.handlers
 import cupocore
+from pprint import pprint
 
 
 # TODO-refactor: Move old archive detection into own method, and add unique path detection, so not only triggered when adding new archives.
@@ -189,17 +190,18 @@ def add_new_vault(db, vault_name):
                       \t{err.message}\n\t{err.cmd}\n\t{err.output}".format(err=e))
         return None
 
-def print_archive_list(db, vault_name):
-    paths = cupocore.mongoops.get_list_of_archives_in_vault(db, vault_name)
+def print_file_list(db, vault_name):
+    paths = cupocore.mongoops.get_list_of_paths_in_vault(db, vault_name)
 
     print "Vault: {0}".format(vault_name)
-    print "\tARN: {0}".format(cupocore.mongoops.get_vault_by_name(vault_name)["arn"])
+    print "\tARN: {0}".format(cupocore.mongoops.get_vault_by_name(db, vault_name)["arn"])
     print "\tFiles available:"
 
     for p in paths:
         print "\t\t{0}".format(p)
 
 def initiate_job_retrieval(db, vault_name, root_folder, download_location):
+    #TODO-retrieval #8 Make job retrieval work
     raise NotImplementedError
 
 
@@ -267,7 +269,7 @@ if __name__ == "__main__":
     # If we're retrieving existing backups...
     elif args.subparser_name == "retrieve":
         if args.list_uploaded_archives:
-            print_archive_list(db, args.vault_name)
+            print_file_list(db, args.vault_name)
             exit()
         else:
             initiate_job_retrieval(db, args.vault_name, args.top_path, args.download_location)

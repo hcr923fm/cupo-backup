@@ -92,13 +92,11 @@ def create_retrieval_entry(db, vault_arn, aws_job_id, download_path):
 
     return db['jobs'].insert(doc_entry)
 
-def get_list_of_archives_in_vault(db, vault_name):
-    vault = get_vault_by_name(vault_name)
-    # TODO-retrieval: Make this sort alphabetically
-    archives = db["archives"].distinct({"vault_arn": vault["arn"]})
+def get_list_of_paths_in_vault(db, vault_name):
+    vault = get_vault_by_name(db, vault_name)
+    archives = db["archives"].distinct("path", {"vault_arn": vault["arn"]})
 
     return archives
-
 
 def get_most_recent_version_of_archive(db, path):
     return db["archives"].find_one(
