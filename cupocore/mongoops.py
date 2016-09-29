@@ -96,8 +96,8 @@ def create_retrieval_entry(db, vault_arn, aws_job_id, download_path):
 
 def get_list_of_archives_in_vault(db, vault_name):
     vault = get_vault_by_name(vault_name)
-    # TODO-retrieval: Make this find unique paths
-    archives = db["archives"].find({"vault_arn": vault["arn"]})
+    # TODO-retrieval: Make this sort alphabetically
+    archives = db["archives"].distinct({"vault_arn": vault["arn"]})
 
     return archives
 
