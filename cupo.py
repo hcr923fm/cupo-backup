@@ -9,7 +9,6 @@ import botocore.utils
 import datetime, time
 import logging, logging.handlers
 import cupocore
-from pprint import pprint
 
 
 # TODO-refactor: Move old archive detection into own method, and add unique path detection, so not only triggered when adding new archives.
