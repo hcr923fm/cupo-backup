@@ -11,10 +11,10 @@ import logging, logging.handlers
 import cupocore
 
 
-# TODO:50 Move old archive detection into own method, and add unique path detection, so not only triggered when adding new archives.
-# TODO:20 Add network rate limiting issue:1
-# TODO:0 Add a way of specifying the amount of redundant backups that should be kept issue:2
-# TODO:30 Specify the minimum amount of time that a backup should be kept for if there are more than <min amount> of backups remaining. issue:3
+# TODO-refactor: Move old archive detection into own method, and add unique path detection, so not only triggered when adding new archives.
+# TODO-ratelimit: #1 Add network rate limiting
+# TODO-backupscount: #2 Add a way of specifying the amount of redundant backups that should be kept
+# TODO-backupsage: #3 Specify the minimum amount of time that a backup should be kept for if there are more than <min amount> of backups remaining.
 
 
 # Only the *files* in a given directory are archived, not the subdirectories.
@@ -199,6 +199,9 @@ def print_archive_list(db, vault_name):
     for p in paths:
         print "\t\t{0}".format(p)
 
+def initiate_job_retrieval(db, vault_name, root_folder, download_location):
+    raise NotImplementedError
+
 
 if __name__ == "__main__":
 
@@ -288,7 +291,7 @@ if __name__ == "__main__":
             root_dir, aws_vault_name, aws_account_id))
 
         subdirs_to_backup = list_dirs(root_dir)  # List of subtrees, relative to root_dir
-        subdirs_to_backup.append("")  # TODO:40 Dammit I will get this working - get the root directory contents to be zipped issue:4
+        subdirs_to_backup.append("")  # TODO-archiveroot: #4 Dammit I will get this working - get the root directory contents to be zipped
 
         for subdir_to_backup in subdirs_to_backup:
 
