@@ -1,7 +1,5 @@
-#from pymongo import MongoClient
 import pymongo
 import time, datetime
-from pprint import pprint
 
 
 # Use the format:
