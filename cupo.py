@@ -153,7 +153,6 @@ def delete_redundant_archives(db, aws_vault_name, aws_account_id):
 def compare_files(length_a, hash_a, length_b, hash_b):
     return (length_a == length_b) & (hash_a == hash_b)
 
-
 def list_dirs(top_dir):
     # Find all of the subdirectories in a given directory.
     logger.info("Finding subdirectories of {0}".format(top_dir))
@@ -189,6 +188,16 @@ def add_new_vault(db, vault_name):
         logger.error("Failed to create new vault. Error: {err.returncode}\n \
                       \t{err.message}\n\t{err.cmd}\n\t{err.output}".format(err=e))
         return None
+
+def print_archive_list(db, vault_name):
+    paths = cupocore.mongoops.get_list_of_archives_in_vault(db, vault_name)
+
+    print "Vault: {0}".format(vault_name)
+    print "\tARN: {0}".format(cupocore.mongoops.get_vault_by_name(vault_name)["arn"])
+    print "\tFiles available:"
+
+    for p in paths:
+        print "\t\t{0}".format(p)
 
 
 if __name__ == "__main__":
@@ -251,6 +260,15 @@ if __name__ == "__main__":
         else:
             logger.error("New vault name not supplied. Cannot create vault.")
         exit()
+        
+    # If we're retrieving existing backups...
+    elif args.subparser_name == "retrieve":
+        if args.list_uploaded_archives:
+            print_archive_list(db, args.vault_name)
+            exit()
+        else:
+            initiate_job_retrieval(db, args.vault_name, args.top_path, args.download_location)
+            logger.critical("This hasn't been implemented yet D: - TODO: INITIATE JOB RETRIEVAL")
 
 
     # Top of directory to backup

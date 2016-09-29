@@ -1,6 +1,7 @@
 #from pymongo import MongoClient
 import pymongo
 import time, datetime
+from pprint import pprint
 
 
 # Use the format:
@@ -23,7 +24,7 @@ import time, datetime
 # })
 #
 #
-# db.vaults.insert_one({
+# db.jobs.insert_one({
 #     "vault_arn":                    "aws://AWS-VAULT-ARN-123456789",
 #     "_id":                          "AWS-JOB-ID-abcdefghijklmnopqrstuvwxyz"
 #     "job_type":                     "retrieval"
@@ -92,6 +93,14 @@ def create_retrieval_entry(db, vault_arn, aws_job_id, download_path):
     doc_entry["job_last_polled_time"] =         time.time()
 
     return db['jobs'].insert(doc_entry)
+
+def get_list_of_archives_in_vault(db, vault_name):
+    vault = get_vault_by_name(vault_name)
+    # TODO-retrieval: Make this find unique paths
+    archives = db["archives"].find({"vault_arn": vault["arn"]})
+
+    return archives
+
 
 def get_most_recent_version_of_archive(db, path):
     return db["archives"].find_one(
