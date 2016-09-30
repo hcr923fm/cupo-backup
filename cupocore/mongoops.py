@@ -51,6 +51,7 @@ def create_backup_database(database_name, db_client, drop_existing=True):
 
     return db
 
+
 def create_vault_entry(db, vault_arn, vault_name):
     # Check first to see if there's already a vault by this name.
     existing_vault_entry = db["vaults"].find_one({"name": vault_name})
@@ -59,38 +60,40 @@ def create_vault_entry(db, vault_arn, vault_name):
 
     # If not, let's create one with the specified info...
     doc_vault = {}
-    doc_vault["arn"] =  vault_arn
+    doc_vault["arn"] = vault_arn
     doc_vault["name"] = vault_name
 
     return db["vaults"].insert_one(doc_vault).inserted_id
 
+
 def create_archive_entry(db, archived_dir_path, vault_arn, aws_archive_id,
                          archive_treehash, archive_size, aws_uri):
-
     # Find an entry in the archives list that matches the path and vault arn
     # that we are uploading to..
     doc_arch = {}
-    doc_arch["path"] =              archived_dir_path
-    doc_arch["vault_arn"] =         vault_arn
-    doc_arch["_id"] =               aws_archive_id
-    doc_arch["treehash"] =          archive_treehash
-    doc_arch["size"] =              archive_size
-    doc_arch["uploaded_time"] =     time.time()
-    doc_arch["aws_URI"] =           aws_uri
-    doc_arch["to_delete"] =         0
+    doc_arch["path"] = archived_dir_path
+    doc_arch["vault_arn"] = vault_arn
+    doc_arch["_id"] = aws_archive_id
+    doc_arch["treehash"] = archive_treehash
+    doc_arch["size"] = archive_size
+    doc_arch["uploaded_time"] = time.time()
+    doc_arch["aws_URI"] = aws_uri
+    doc_arch["to_delete"] = 0
 
     # Add the entry.
     return db['archives'].insert(doc_arch)
 
+
 def create_retrieval_entry(db, vault_arn, aws_job_id, download_path):
     doc_entry = {}
-    doc_entry["_id"] =                          aws_job_id
-    doc_entry["vault_arn"] =                    vault_arn
-    doc_entry["job_type"] =                     "retrieval"
-    doc_entry["job_retrieval_destination"] =    download_path
-    doc_entry["job_last_polled_time"] =         time.time()
+    doc_entry["_id"] = aws_job_id
+    doc_entry["vault_arn"] = vault_arn
+    doc_entry["job_type"] = "retrieval"
+    doc_entry["job_retrieval_destination"] = download_path
+    doc_entry["job_last_polled_time"] = time.time()
 
     return db['jobs'].insert(doc_entry)
+
 
 def get_list_of_paths_in_vault(db, vault_name):
     vault = get_vault_by_name(db, vault_name)
@@ -98,10 +101,12 @@ def get_list_of_paths_in_vault(db, vault_name):
 
     return archives
 
+
 def get_most_recent_version_of_archive(db, path):
     return db["archives"].find_one(
         {"path": path, "to_delete": 0},
         sort=[('uploaded_time', pymongo.DESCENDING)])
+
 
 def get_old_archives(db, archived_dir_path, vault_name):
     vault_arn = get_vault_by_name(db, vault_name)["arn"]
@@ -111,7 +116,7 @@ def get_old_archives(db, archived_dir_path, vault_name):
     cursor = db["archives"].find({"to_delete": 0,
                                   "path": archived_dir_path,
                                   "uploaded_time":
-                                  {"$lt": deadline_ts}
+                                      {"$lt": deadline_ts}
                                   },
                                  sort=[("uploaded_time", pymongo.DESCENDING)],
                                  skip=3)
@@ -120,11 +125,13 @@ def get_old_archives(db, archived_dir_path, vault_name):
     for arch in cursor: old_archives.append(arch)
     return old_archives
 
+
 def mark_archive_for_deletion(db, archive_id):
     db["archives"].find_one_and_update({"_id": archive_id},
                                        {"$set":
-                                        {"to_delete": 1}
+                                            {"to_delete": 1}
                                         })
+
 
 def get_archives_to_delete(db):
     cursor = db["archives"].find({"to_delete": 1})
@@ -134,14 +141,18 @@ def get_archives_to_delete(db):
 
     return redundant_archives
 
+
 def delete_archive_document(db, archive_id):
     db["archives"].find_one_and_delete({"_id": archive_id})
+
 
 def get_vault_by_name(db, vault_name):
     return db['vaults'].find_one({"name": vault_name})
 
+
 def get_vault_by_arn(db, vault_arn):
     return db['vaults'].find_one({"arn": vault_arn})
+
 
 def connect(database_name, host="localhost", port=27017):
     mongodb_uri = "{host}:{port}".format(host=host, port=port)

@@ -1,5 +1,5 @@
 __author__ = 'Callum McLean <calmcl1@aol.com>'
-__version__= '0.1.0'
+__version__ = '0.1.0'
 
 import os, os.path
 import json
@@ -62,7 +62,7 @@ def archive_directory(top_dir, subdir, tmpdir):
             elif ret_code == 7:
                 # Command-line error
                 logger.info("7-Zip: Command-line error (return code 7)\n%s"
-                              % e.cmd)
+                            % e.cmd)
             elif ret_code == 8:
                 # Not enough memory for operation
                 logger.info("7-Zip: Not enough memory for operation (return code 8)")
@@ -79,24 +79,24 @@ def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id, du
 
     try:
         if not dummy:
-                cmd = ["aws", "glacier", "upload-archive", "--account-id", aws_account_id]
-                if aws_profile: cmd.extend(["--profile", aws_profile])
-                cmd.extend(["--checksum", archive_treehash, "--vault-name",
-                            aws_vault,"--body", archive_path])
-                aws_cli_op = subprocess.check_output(cmd, stderr=devnull)
-                devnull.close()
+            cmd = ["aws", "glacier", "upload-archive", "--account-id", aws_account_id]
+            if aws_profile: cmd.extend(["--profile", aws_profile])
+            cmd.extend(["--checksum", archive_treehash, "--vault-name",
+                        aws_vault, "--body", archive_path])
+            aws_cli_op = subprocess.check_output(cmd, stderr=devnull)
+            devnull.close()
 
-                aws_cli_op = aws_cli_op.replace("\r\n", "")
+            aws_cli_op = aws_cli_op.replace("\r\n", "")
 
-                # Returned fields from upload:
-                # location -> (string)
-                # The relative URI path of the newly added archive resource.
-                # checksum -> (string)
-                # The checksum of the archive computed by Amazon Glacier.
-                # archiveId -> (string)
-                # The ID of the archive. This value is also included as part of the location.
+            # Returned fields from upload:
+            # location -> (string)
+            # The relative URI path of the newly added archive resource.
+            # checksum -> (string)
+            # The checksum of the archive computed by Amazon Glacier.
+            # archiveId -> (string)
+            # The ID of the archive. This value is also included as part of the location.
 
-                aws_params = json.loads(aws_cli_op)
+            aws_params = json.loads(aws_cli_op)
 
         else:
             # This is a dummy upload, for testing purposes. Create a fake
@@ -112,13 +112,14 @@ def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id, du
                       \tlocation: {params[location]} \n \
                       \tchecksum: {params[checksum]} \n \
                       \tarchiveId: {params[archiveId]}".format(archpath=archive_path,
-                                                              params=aws_params))
+                                                               params=aws_params))
         return aws_params
 
     except subprocess.CalledProcessError, e:
         logger.info("Upload failed! Error: {err.returncode}\n \
                       \t{err.message}\n\t{err.cmd}\n\t{err.output}".format(err=e))
         return None
+
 
 def delete_aws_archive(archive_id, aws_vault, aws_account_id):
     logger.info("Deleting archive with id {0} from vault {1}".format(
@@ -140,18 +141,21 @@ def delete_aws_archive(archive_id, aws_vault, aws_account_id):
                       \t{err.message}\n\t{err.cmd}\n\t{err.output}".format(err=e))
         return None
 
+
 def delete_redundant_archives(db, aws_vault_name, aws_account_id):
     redundant_archives = cupocore.mongoops.get_archives_to_delete(db)
     for arch in redundant_archives:
         deleted_aws = delete_aws_archive(arch["_id"], aws_vault_name, aws_account_id)
         if deleted_aws:
-            cupocore.mongoops.delete_archive_document(db,arch["_id"])
+            cupocore.mongoops.delete_archive_document(db, arch["_id"])
             logger.info("Deleted archive with ID {0} from local database".format(arch["_id"]))
         else:
             logger.info("AWS deletion failed; not removing database entry")
 
+
 def compare_files(length_a, hash_a, length_b, hash_b):
     return (length_a == length_b) & (hash_a == hash_b)
+
 
 def list_dirs(top_dir):
     # Find all of the subdirectories in a given directory.
@@ -162,6 +166,7 @@ def list_dirs(top_dir):
             dirs.append(os.path.relpath(os.path.join(dirname, s), top_dir))
             logger.info("Found subdirectory {0}".format(s))
     return dirs
+
 
 def add_new_vault(db, vault_name):
     logger.info("Creating new vault: {0}".format(vault_name))
@@ -189,6 +194,7 @@ def add_new_vault(db, vault_name):
                       \t{err.message}\n\t{err.cmd}\n\t{err.output}".format(err=e))
         return None
 
+
 def print_file_list(db, vault_name):
     paths = cupocore.mongoops.get_list_of_paths_in_vault(db, vault_name)
 
@@ -199,8 +205,9 @@ def print_file_list(db, vault_name):
     for p in paths:
         print "\t\t{0}".format(p)
 
+
 def initiate_job_retrieval(db, vault_name, root_folder, download_location):
-    #TODO-retrieval #8 Make job retrieval work
+    # TODO-retrieval #8 Make job retrieval work
     raise NotImplementedError
 
 
@@ -216,8 +223,8 @@ if __name__ == "__main__":
     # and a STDERR log at the specified level.
 
     logger = logging.Logger("cupobackup{0}".format(os.getpid()))
-    log_rotating = logging.handlers.RotatingFileHandler(filename=os.path.join(args.logging_dir,'.cupoLog'),
-                                                        maxBytes=10485760, # 10MB
+    log_rotating = logging.handlers.RotatingFileHandler(filename=os.path.join(args.logging_dir, '.cupoLog'),
+                                                        maxBytes=10485760,  # 10MB
                                                         backupCount=5)
     log_stream = logging.StreamHandler()
 
@@ -241,14 +248,15 @@ if __name__ == "__main__":
         cupocore.cmdparser.create_config_file(args.sample_file_location)
         exit()
 
-
     # On we go!
 
     if not hasattr(args, "account_id") or not args.account_id:
-        logger.error("AWS account ID has not been supplied. Use '--account-id' or specify the 'account_id' option in a config file.")
+        logger.error(
+            "AWS account ID has not been supplied. Use '--account-id' or specify the 'account_id' option in a config file.")
         exit(1)
     if not hasattr(args, "database") or not args.database:
-        logger.error("MongoDB database has not been supplied. Use '--database' or specify the 'database' option in a config file.")
+        logger.error(
+            "MongoDB database has not been supplied. Use '--database' or specify the 'database' option in a config file.")
         exit(1)
 
     aws_account_id = args.account_id
@@ -264,7 +272,7 @@ if __name__ == "__main__":
         else:
             logger.error("New vault name not supplied. Cannot create vault.")
         exit()
-        
+
     # If we're retrieving existing backups...
     elif args.subparser_name == "retrieve":
         if args.list_uploaded_archives:
@@ -273,7 +281,6 @@ if __name__ == "__main__":
         else:
             initiate_job_retrieval(db, args.vault_name, args.top_path, args.download_location)
             logger.critical("This hasn't been implemented yet D: - TODO: INITIATE JOB RETRIEVAL")
-
 
     # Top of directory to backup
     root_dir = args.backup_directory
@@ -292,7 +299,8 @@ if __name__ == "__main__":
             root_dir, aws_vault_name, aws_account_id))
 
         subdirs_to_backup = list_dirs(root_dir)  # List of subtrees, relative to root_dir
-        subdirs_to_backup.append("")  # TODO-archiveroot: #4 Dammit I will get this working - get the root directory contents to be zipped
+        subdirs_to_backup.append(
+            "")  # TODO-archiveroot: #4 Dammit I will get this working - get the root directory contents to be zipped
 
         for subdir_to_backup in subdirs_to_backup:
 
@@ -328,19 +336,20 @@ if __name__ == "__main__":
             # If the hashes are the same - don't upload the archive; it already exists
             if not compare_files(size_arch, archive_hash, size_remote, hash_remote):
                 # Otherwise, upload the archive
-                upload_status = upload_archive(tmp_archive_fullpath, aws_vault_name, archive_hash, aws_account_id, args.dummy_upload)
+                upload_status = upload_archive(tmp_archive_fullpath, aws_vault_name, archive_hash, aws_account_id,
+                                               args.dummy_upload)
                 if upload_status:
                     # Get vault arn:
                     aws_vault_arn = cupocore.mongoops.get_vault_by_name(db, aws_vault_name)["arn"]
 
                     # Store the info about the newly uploaded file in the database
                     cupocore.mongoops.create_archive_entry(db,
-                                                     backup_subdir_rel_filename,
-                                                     aws_vault_arn,
-                                                     upload_status["archiveId"],
-                                                     archive_hash,
-                                                     size_arch,
-                                                     upload_status["location"])
+                                                           backup_subdir_rel_filename,
+                                                           aws_vault_arn,
+                                                           upload_status["archiveId"],
+                                                           archive_hash,
+                                                           size_arch,
+                                                           upload_status["location"])
                 else:
                     logger.info("Failed to upload {0}".format(backup_subdir_rel_filename))
             else:
@@ -376,7 +385,6 @@ if __name__ == "__main__":
         delete_redundant_archives(db, aws_vault_name, aws_account_id)
     else:
         logger.info("Skipping archive pruning - '--no-prune' supplied.")
-
 
     # Finished with the database
     logger.info("Closing MongoDB database\r\n\r\n")
