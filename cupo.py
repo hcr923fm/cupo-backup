@@ -42,7 +42,7 @@ def archive_directory(top_dir, subdir, tmpdir):
     for c in dir_contents:
         fpath = os.path.join(top_dir, subdir, c)
         if os.path.isfile(fpath) and not fpath.endswith(".ini"):
-            logger.info("Adding to archive list: {0}".format(c))
+            # logger.info("Adding to archive list: {0}".format(c))
             files.append(fpath)
 
     if files:  # No point creating empty archives!
@@ -174,7 +174,7 @@ def list_dirs(top_dir):
     for dirname, subdirs, files in os.walk(top_dir):
         for s in subdirs:
             dirs.append(os.path.relpath(os.path.join(dirname, s), top_dir))
-            logger.info("Found subdirectory {0}".format(s))
+            logger.info("Found subdirectory {0}".format(os.path.join(dirname, s), top_dir))
     return dirs
 
 <<<<<<< HEAD
