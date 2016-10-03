@@ -163,7 +163,6 @@ def add_new_vault(db, aws_account_id, vault_name):
     logger.info("Creating new vault: {0}".format(vault_name))
     devnull = open(os.devnull, "w")
     try:
-        aws_cli_op = subprocess.check_output(cmd, stderr=devnull)
 
         response = boto_client.create_vault(accountId=aws_account_id,
                                             vaultName=vault_name)
@@ -240,17 +239,6 @@ def init_job_retrieval(db, vault_name, archive_id, download_location):
                                                  init_job_ret["location"],
                                                  download_location)
 
-
-
-if __name__ == "__main__":
-
-    # Parse the options from the command line and from the config file too.
-    # Options specified on the command line will override anything specified
-    # in the config file.
-
-    args = cupocore.cmdparser.parse_args()
-
-
 if __name__ == "__main__":
 
     # Parse the options from the command line and from the config file too.
@@ -302,8 +290,11 @@ if __name__ == "__main__":
             print_file_list(db, args.vault_name)
             exit()
         else:
-            # Figure out the archive IDs to download from the top_path, then do initiate_job_retrieval for all of them
-            init_job_retrieval(db, args.vault_name, args.top_path, args.download_location)
+            archive_list = cupocore.mongoops.get_archive_by_path(db, args.vault_name, args.top_path, True)
+
+            if len(archive_list):
+                for arch in archive_list:
+                    init_job_retrieval(db, args.vault_name, arch["_id"], args.download_location)
             logger.critical("This hasn't been implemented yet D: - TODO: INITIATE JOB RETRIEVAL")
 
     # Top of directory to backup
@@ -343,7 +334,8 @@ if __name__ == "__main__":
             backup_subdir_rel_filename = subdir_to_backup + ".7z"
 
             # Find most recent version of this file in Glacier
-            most_recent_version = cupocore.mongoops.get_most_recent_version_of_archive(db, backup_subdir_rel_filename)
+            most_recent_version = cupocore.mongoops.get_most_recent_version_of_archive(db, aws_vault_name,
+                                                                                       backup_subdir_rel_filename)
 
             if most_recent_version:
                 logger.info("Archive for this path exists in local database")

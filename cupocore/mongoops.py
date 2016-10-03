@@ -103,9 +103,10 @@ def get_list_of_paths_in_vault(db, vault_name):
     return archives
 
 
-def get_most_recent_version_of_archive(db, path):
+def get_most_recent_version_of_archive(db, vault_name, path):
+    vault_arn = get_vault_by_name(db, vault_name)["arn"]
     return db["archives"].find_one(
-        {"path": path, "to_delete": 0},
+        {"path": path, "to_delete": 0, vault_arn: vault_arn},
         sort=[('uploaded_time', pymongo.DESCENDING)])
 
 
@@ -141,6 +142,41 @@ def get_archives_to_delete(db):
         redundant_archives.append(arch)
 
     return redundant_archives
+
+
+def get_archive_by_path(db, vault_name, path, retrieve_subpath_archs=False):
+    """
+    Will attempt to find the most recent version of an archive representing a given path.
+    If retrieve_subpath_archs is True, then will also retrieve latest versions of archives representing
+    subdirs of the path.
+    :param path: The path whose contents we want to retrieve, relative to the top_dir that was backed up.
+    :param retrieve_subpath_archs: If True, will return a list of all of the archives of subdirectories below the `path`
+    in the directory tree
+    :return: archive, list
+    """
+
+    if not retrieve_subpath_archs:
+        get_most_recent_version_of_archive(db, vault_name, path)
+
+    else:
+        # When trying to find subdirectories, the daft assumption that we make is that the 'path' of the archive will
+        # start with `path` and be longer than `path`. It'll work for now, but seems inelegant...
+
+        path_list = get_list_of_paths_in_vault(db, vault_name)
+
+        subdir_list = []
+        while len(path_list):
+            cur_path = path_list.pop()
+            if cur_path.startswith(path) and len(cur_path) >= len(path):
+                subdir_list.append(cur_path)
+
+        arch_list = []
+        for subdir in subdir_list:
+            arch = get_most_recent_version_of_archive(db, vault_name, subdir)
+            if arch: arch_list.append(arch)
+
+        return arch_list
+
 
 
 def delete_archive_document(db, archive_id):
