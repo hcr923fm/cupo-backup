@@ -6,6 +6,7 @@ import json
 import subprocess
 import tempfile
 import botocore.utils
+import boto3
 import datetime, time
 import logging, logging.handlers
 import cupocore
@@ -208,6 +209,7 @@ def print_file_list(db, vault_name):
 
 def initiate_job_retrieval(db, vault_name, root_folder, download_location):
     # TODO-retrieval #8 Make job retrieval work
+
     raise NotImplementedError
 
 
