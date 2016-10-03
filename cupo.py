@@ -6,7 +6,6 @@ import json
 import subprocess
 import tempfile
 import botocore.utils
-import boto3
 import datetime, time
 import logging, logging.handlers
 import cupocore
