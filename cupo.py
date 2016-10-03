@@ -220,7 +220,7 @@ def print_file_list(db, vault_name):
         print "\t\t{0}".format(p)
 
 
-def initiate_job_retrieval(db, vault_name, archive_id, download_location):
+def init_job_retrieval(db, vault_name, archive_id, download_location):
     # TODO-retrieval #8 Make job retrieval work
     raise NotImplementedError
 
@@ -303,7 +303,7 @@ if __name__ == "__main__":
             exit()
         else:
             # Figure out the archive IDs to download from the top_path, then do initiate_job_retrieval for all of them
-            initiate_job_retrieval(db, args.vault_name, args.top_path, args.download_location)
+            init_job_retrieval(db, args.vault_name, args.top_path, args.download_location)
             logger.critical("This hasn't been implemented yet D: - TODO: INITIATE JOB RETRIEVAL")
 
     # Top of directory to backup
