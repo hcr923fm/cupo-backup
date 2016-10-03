@@ -62,6 +62,9 @@ target/
 # notes/imdone atom plugin
 /.imdone
 
+# komodo
+*.komodo*
+
 /.gitignore
 /backup_dst
 /.idea
