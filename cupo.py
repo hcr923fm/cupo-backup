@@ -2,12 +2,11 @@ __author__ = 'Callum McLean <calmcl1@aol.com>'
 __version__ = '0.1.0'
 
 import os, os.path
-import json
 import subprocess
 import tempfile
-import botocore, botocore.utils
+import botocore.utils
 import boto3
-import datetime, time
+import time
 import logging, logging.handlers
 import cupocore
 
