@@ -163,9 +163,6 @@ def add_new_vault(db, aws_account_id, vault_name):
     logger.info("Creating new vault: {0}".format(vault_name))
     devnull = open(os.devnull, "w")
     try:
-        cmd = ["aws", "glacier", "create-vault", "--account-id", aws_account_id]
-        if aws_profile: cmd.extend(["--profile", aws_profile])
-        cmd.extend(["--vault-name", vault_name])
         aws_cli_op = subprocess.check_output(cmd, stderr=devnull)
 
         response = boto_client.create_vault(accountId=aws_account_id,
@@ -183,6 +180,7 @@ def add_new_vault(db, aws_account_id, vault_name):
 
     except Exception, e:
         logger.error("Failed to create new vault!")
+        # TODO: Make this exception less shit (:
         return None
 
 
@@ -222,10 +220,26 @@ def print_file_list(db, vault_name):
         print "\t\t{0}".format(p)
 
 
-def initiate_job_retrieval(db, vault_name, root_folder, download_location):
+def initiate_job_retrieval(db, vault_name, archive_id, download_location):
     # TODO-retrieval #8 Make job retrieval work
-
     raise NotImplementedError
+
+    job_params = {
+        "Format": "JSON",
+        "Type": "archive-retrieval",
+        "ArchiveID": archive_id
+    }
+    init_job_ret = boto_client.initiate_job(accountId = args.account_id,
+                             vaultName = args.vault_name,
+                             jobParameters = job_params)
+
+    if init_job_ret:
+        cupocore.mongoops.create_retrieval_entry(db,
+                                                 cupocore.mongoops.get_vault_by_name(db, vault_name)["arn"],
+                                                 init_job_ret["jobId"],
+                                                 init_job_ret["location"],
+                                                 download_location)
+
 
 
 if __name__ == "__main__":
@@ -288,6 +302,7 @@ if __name__ == "__main__":
             print_file_list(db, args.vault_name)
             exit()
         else:
+            # Figure out the archive IDs to download from the top_path, then do initiate_job_retrieval for all of them
             initiate_job_retrieval(db, args.vault_name, args.top_path, args.download_location)
             logger.critical("This hasn't been implemented yet D: - TODO: INITIATE JOB RETRIEVAL")
 

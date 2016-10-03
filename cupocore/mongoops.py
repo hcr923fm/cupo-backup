@@ -84,9 +84,10 @@ def create_archive_entry(db, archived_dir_path, vault_arn, aws_archive_id,
     return db['archives'].insert(doc_arch)
 
 
-def create_retrieval_entry(db, vault_arn, aws_job_id, download_path):
+def create_retrieval_entry(db, vault_arn, aws_job_id, aws_job_location, download_path):
     doc_entry = {}
     doc_entry["_id"] = aws_job_id
+    doc_entry["location"] = aws_job_location
     doc_entry["vault_arn"] = vault_arn
     doc_entry["job_type"] = "retrieval"
     doc_entry["job_retrieval_destination"] = download_path
