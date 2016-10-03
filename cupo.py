@@ -11,18 +11,11 @@ import datetime, time
 import logging, logging.handlers
 import cupocore
 
-<<<<<<< HEAD
-# TODO:50 Move old archive detection into own method, and add unique path detection, so not only triggered when adding new archives.
-# TODO:20 Add network rate limiting issue:1
-# TODO:0 Add a way of specifying the amount of redundant backups that should be kept issue:2
-# TODO:30 Specify the minimum amount of time that a backup should be kept for if there are more than <min amount> of backups remaining. issue:3
-=======
 
 # TODO-refactor: Move old archive detection into own method, and add unique path detection, so not only triggered when adding new archives.
 # TODO-ratelimit: #1 Add network rate limiting
 # TODO-backupscount: #2 Add a way of specifying the amount of redundant backups that should be kept
 # TODO-backupsage: #3 Specify the minimum amount of time that a backup should be kept for if there are more than <min amount> of backups remaining.
->>>>>>> file-retrieval
 
 
 # Only the *files* in a given directory are archived, not the subdirectories.
@@ -85,7 +78,6 @@ def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id, du
 
     try:
         if not dummy:
-<<<<<<< HEAD
             response = {}
             with open(archive_path, 'rb') as body:
                 response = boto_client.upload_archive(vaultName=aws_vault,
@@ -93,15 +85,6 @@ def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id, du
                                         archiveDescription=archive_path,
                                         body=body)
             aws_params = response
-=======
-            cmd = ["aws", "glacier", "upload-archive", "--account-id", aws_account_id]
-            if aws_profile: cmd.extend(["--profile", aws_profile])
-            cmd.extend(["--checksum", archive_treehash, "--vault-name",
-                        aws_vault, "--body", archive_path])
-            aws_cli_op = subprocess.check_output(cmd, stderr=devnull)
-            devnull.close()
-
-            aws_cli_op = aws_cli_op.replace("\r\n", "")
 
             # Returned fields from upload:
             # location -> (string)
@@ -111,8 +94,6 @@ def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id, du
             # archiveId -> (string)
             # The ID of the archive. This value is also included as part of the location.
 
-            aws_params = json.loads(aws_cli_op)
->>>>>>> file-retrieval
 
         else:
             # This is a dummy upload, for testing purposes. Create a fake
@@ -177,12 +158,9 @@ def list_dirs(top_dir):
             logger.info("Found subdirectory {0}".format(os.path.join(dirname, s), top_dir))
     return dirs
 
-<<<<<<< HEAD
-def add_new_vault(db, aws_account_id, vault_name):
-=======
 
-def add_new_vault(db, vault_name):
->>>>>>> file-retrieval
+def add_new_vault(db, aws_account_id, vault_name):
+
     logger.info("Creating new vault: {0}".format(vault_name))
     devnull = open(os.devnull, "w")
     try:
@@ -208,9 +186,31 @@ def add_new_vault(db, vault_name):
         logger.error("Failed to create new vault!")
         return None
 
-<<<<<<< HEAD
+
 def init_logging():
-=======
+    # Set up some logs - one rotating log, which contains all the debug output
+    # and a STDERR log at the specified level.
+
+    logger = logging.Logger("cupobackup{0}".format(os.getpid()))
+    log_rotating = logging.handlers.RotatingFileHandler(filename=os.path.join(args.logging_dir, '.cupoLog'),
+                                                        maxBytes=10485760,  # 10MB
+                                                        backupCount=5)
+    log_stream = logging.StreamHandler()
+
+    log_rotate_formatter = logging.Formatter("""%(asctime)-26s : %(levelname)s : %(module)s : %(message)s""")
+    log_stream_formatter = logging.Formatter("""%(levelname)s : %(message)s""")
+    log_rotating.setFormatter(log_rotate_formatter)
+    log_stream.setFormatter(log_stream_formatter)
+    log_rotating.setLevel(logging.INFO)
+
+    if args.debug:
+        log_stream.setLevel(logging.INFO)
+    else:
+        log_stream.setLevel(logging.INFO)
+
+    logger.addHandler(log_rotating)
+    logger.addHandler(log_stream)
+    return logger
 
 def print_file_list(db, vault_name):
     paths = cupocore.mongoops.get_list_of_paths_in_vault(db, vault_name)
@@ -236,31 +236,6 @@ if __name__ == "__main__":
     # in the config file.
 
     args = cupocore.cmdparser.parse_args()
-
->>>>>>> file-retrieval
-    # Set up some logs - one rotating log, which contains all the debug output
-    # and a STDERR log at the specified level.
-
-    logger = logging.Logger("cupobackup{0}".format(os.getpid()))
-    log_rotating = logging.handlers.RotatingFileHandler(filename=os.path.join(args.logging_dir, '.cupoLog'),
-                                                        maxBytes=10485760,  # 10MB
-                                                        backupCount=5)
-    log_stream = logging.StreamHandler()
-
-    log_rotate_formatter = logging.Formatter("""%(asctime)-26s : %(levelname)s : %(module)s : %(message)s""")
-    log_stream_formatter = logging.Formatter("""%(levelname)s : %(message)s""")
-    log_rotating.setFormatter(log_rotate_formatter)
-    log_stream.setFormatter(log_stream_formatter)
-    log_rotating.setLevel(logging.INFO)
-
-    if args.debug:
-        log_stream.setLevel(logging.INFO)
-    else:
-        log_stream.setLevel(logging.INFO)
-
-    logger.addHandler(log_rotating)
-    logger.addHandler(log_stream)
-    return logger
 
 
 if __name__ == "__main__":
