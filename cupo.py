@@ -4,11 +4,12 @@ __version__ = '0.1.0'
 import os, os.path
 import subprocess
 import tempfile
-import botocore.utils
+import botocore.utils, botocore.exceptions
 import boto3
 import time
 import logging, logging.handlers
 import cupocore
+import pymongo.errors
 
 
 # TODO-refactor: Move old archive detection into own method, and add unique path detection, so not only triggered when adding new archives.
@@ -80,9 +81,9 @@ def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id, du
             response = {}
             with open(archive_path, 'rb') as body:
                 response = boto_client.upload_archive(vaultName=aws_vault,
-                                        accountId=aws_account_id,
-                                        archiveDescription=archive_path,
-                                        body=body)
+                                                      accountId=aws_account_id,
+                                                      archiveDescription=archive_path,
+                                                      body=body)
             aws_params = response
 
             # Returned fields from upload:
@@ -159,7 +160,6 @@ def list_dirs(top_dir):
 
 
 def add_new_vault(db, aws_account_id, vault_name):
-
     logger.info("Creating new vault: {0}".format(vault_name))
     devnull = open(os.devnull, "w")
     try:
@@ -171,11 +171,23 @@ def add_new_vault(db, aws_account_id, vault_name):
         # location -> (string)
         # The URI of the vault that was created.
         aws_vault_arn = response["location"]
-
         logger.info("Successfully created AWS vault {0}:\n {1}".format(vault_name, aws_vault_arn))
+
+    except botocore.exceptions.BotoCoreError, e:
+        logger.error("Was not able to create new vault on Glacier.")
+        logger.debug(e.message)
+        return None
+
+    try:
         cupocore.mongoops.create_vault_entry(db, aws_vault_arn, vault_name)
         logger.info("Created database entry for vault {0}".format(vault_name))
         return 1
+
+    except pymongo.errors.PyMongoError:
+        logging.error(
+            "Was not able to create database entry for new AWS vault {0} - items uploaded to this vault may not be correctly tracked!").format(
+            vault_name)
+        return None
 
     except Exception, e:
         logger.error("Failed to create new vault!")
@@ -208,6 +220,7 @@ def init_logging():
     logger.addHandler(log_stream)
     return logger
 
+
 def print_file_list(db, vault_name):
     paths = cupocore.mongoops.get_list_of_paths_in_vault(db, vault_name)
 
@@ -228,9 +241,9 @@ def init_job_retrieval(db, vault_name, archive_id, download_location):
         "Type": "archive-retrieval",
         "ArchiveID": archive_id
     }
-    init_job_ret = boto_client.initiate_job(accountId = args.account_id,
-                             vaultName = args.vault_name,
-                             jobParameters = job_params)
+    init_job_ret = boto_client.initiate_job(accountId=args.account_id,
+                                            vaultName=args.vault_name,
+                                            jobParameters=job_params)
 
     if init_job_ret:
         cupocore.mongoops.create_retrieval_entry(db,
@@ -238,6 +251,7 @@ def init_job_retrieval(db, vault_name, archive_id, download_location):
                                                  init_job_ret["jobId"],
                                                  init_job_ret["location"],
                                                  download_location)
+
 
 if __name__ == "__main__":
 
@@ -272,7 +286,7 @@ if __name__ == "__main__":
     aws_profile = args.aws_profile or None
     db_client, db = cupocore.mongoops.connect(db_name)
 
-    boto_session = boto3.Session(profile_name = aws_profile)
+    boto_session = boto3.Session(profile_name=aws_profile)
     boto_client = boto_session.client('glacier')
 
     # If we're only adding a new vault...
