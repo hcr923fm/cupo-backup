@@ -106,7 +106,7 @@ def get_list_of_paths_in_vault(db, vault_name):
 def get_most_recent_version_of_archive(db, vault_name, path):
     vault_arn = get_vault_by_name(db, vault_name)["arn"]
     return db["archives"].find_one(
-        {"path": path, "to_delete": 0, vault_arn: vault_arn},
+        {"path": path, "to_delete": 0, "vault_arn": vault_arn},
         sort=[('uploaded_time', pymongo.DESCENDING)])
 
 
