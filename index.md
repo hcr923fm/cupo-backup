@@ -15,8 +15,8 @@ It's all Python - no compilation required! Just [download and install the prereq
 
 ### Latest Version: [{{ site.github.releases[0].name }}]({{ site.github.releases[0].url }}){: .btn}
 
-[Download .tar]({{ site.github.releases[0].tarball_url }}){: .btn .btn--info .btn--large}
-[Download .zip]({{ site.github.releases[0].zipball_url }}){: .btn .btn--info .btn--large}
+[ <i class="fa fa-archive"> Download .tar]({{ site.github.releases[0].tarball_url }}){: .btn .btn--info .btn--large}
+[ <i class="fa fa-archive"> Download .zip]({{ site.github.releases[0].zipball_url }}){: .btn .btn--info .btn--large}
 
 ### Bleeding Edge
 To get the latest copy of the source - which may or may not be entirely stable or work as according to the documentation - just clone the GitHub repo:
