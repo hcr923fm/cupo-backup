@@ -40,8 +40,8 @@ In there, you will find most of the common options that are required to run any 
 ### Creating a New Vault
 To start off, create a new vault in Glacier (or, if a vault that you want to use already exists in AWS, register it in the local database):
 
-`cupo.py -c /path/to/config/file new-vault NEW_VAULT_NAME`, or
-`cupo.py --account-id AWS_ACCOUNT_ID --database DATABASE_NAME new-vault NEW_VAULT_NAME`
+* `cupo.py -c /path/to/config/file new-vault NEW_VAULT_NAME`, or
+* `cupo.py --account-id AWS_ACCOUNT_ID --database DATABASE_NAME new-vault NEW_VAULT_NAME`
 
 where:
 
@@ -53,8 +53,8 @@ where:
 
 Now, it's as simple as specifying a directory to back up and a vault!
 
-`cupo.py -c /path/to/config/file backup` or
-`cupo.py --account-id AWS_ACCOUNT_ID --d DATABASE_NAME backup -r TOP_DIR -n VAULT_NAME`
+* `cupo.py -c /path/to/config/file backup` or
+* `cupo.py --account-id AWS_ACCOUNT_ID --d DATABASE_NAME backup -r TOP_DIR -n VAULT_NAME`
 
 where:
 

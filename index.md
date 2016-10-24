@@ -19,7 +19,9 @@ It's all Python - no compilation required! Just [download and install the prereq
 [Download .zip]({{ site.github.releases[0].zipball_url }}){: .btn .btn--info .btn--large}
 
 ### Bleeding Edge
-To get the latest copy of the source - which may or may not be entirely stable or work as according to the documentation - just clone the GitHub repo: ` {{ site.github.clone_url }} ` 
+To get the latest copy of the source - which may or may not be entirely stable or work as according to the documentation - just clone the GitHub repo:
+
+`{{ site.github.clone_url }}` 
 
 Find Cupo on <i class="fa fa-fw fa-github"></i>[GitHub]({{ site.github.repository_url }}).
 
