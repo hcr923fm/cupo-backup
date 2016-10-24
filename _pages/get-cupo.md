@@ -43,6 +43,6 @@ To use an older release of Cupo, download a source archive from the list below.
 
 **Download zip archive**: [{{ release.name }}.zip]({{ release.zipball_url }})
 
-**Release info on GitHub**: [Cupo {{ release.name }}]({{ release.url }})
+**Release info on GitHub**: [Cupo {{ release.name }}]({{ release.html_url }})
 
 {% endfor %}
