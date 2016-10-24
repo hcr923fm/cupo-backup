@@ -54,7 +54,7 @@ where:
 Now, it's as simple as specifying a directory to back up and a vault!
 
 * `cupo.py -c /path/to/config/file backup` or
-* `cupo.py --account-id AWS_ACCOUNT_ID --d DATABASE_NAME backup -r TOP_DIR -n VAULT_NAME`
+* `cupo.py --account-id AWS_ACCOUNT_ID -d DATABASE_NAME backup -r TOP_DIR -n VAULT_NAME`
 
 where:
 
