@@ -11,20 +11,20 @@ class cmdOptions():
 def __parse_cmd_args(options_namespace):
     arg_parser = argparse.ArgumentParser(
         description='A tool to manage differential file uploads to an Amazon Glacier repository')
-    arg_parser.add_argument('--account-id', help='The AWS ID of the account that owns the specified vault',
+    arg_parser.add_argument('--account-id', "-i", help='The AWS ID of the account that owns the specified vault',
                             metavar='aws_acct_id')
-    arg_parser.add_argument('--aws-profile',
+    arg_parser.add_argument('--aws-profile', "-p",
                             help='If supplied, the "--profile" switch will be passed to the AWS CLI for credential management.')
-    arg_parser.add_argument('--database',
+    arg_parser.add_argument('--database', "-d",
                             help='The database name to connect to.',
                             metavar='DB_NAME')
-    arg_parser.add_argument('--debug',
+    arg_parser.add_argument('--debug', "-v",
                             help='If passed, the default logging level will be set to DEBUG.',
                             action='store_true')
-    arg_parser.add_argument('--logging-dir',
+    arg_parser.add_argument('--logging-dir', "-l",
                             help='The log will be stored in this directory, if passed.',
                             default=os.path.expanduser('~'))
-    arg_parser.add_argument('--config-file',
+    arg_parser.add_argument('--config-file', "-c",
                             help='Loads options from a config file.')
 
     subparsers = arg_parser.add_subparsers(help="Run HCRBackup backup|new-vault --help for more info on each command.",
