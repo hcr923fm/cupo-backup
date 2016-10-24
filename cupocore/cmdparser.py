@@ -25,15 +25,19 @@ def __parse_cmd_args(options_namespace):
                             help='The log will be stored in this directory, if passed.',
                             default=os.path.expanduser('~'))
     arg_parser.add_argument('--config-file', "-c",
-                            help='Loads options from a config file.')
+                            help='Loads options from a config file.',
+                            default=os.path.expanduser("~/.cupo.json"))
 
     subparsers = arg_parser.add_subparsers(
         help="Run cupo [ backup | new-vault ] --help for more info on each command.",
         dest="subparser_name")
-    arg_parser_backup = subparsers.add_parser('backup', help="Execute incremental backup of a directory to an Amazon Glacier \
+    arg_parser_backup = subparsers.add_parser('backup',
+                                              help="Execute incremental backup of a directory to an Amazon Glacier \
                                               vault, and prune any outdated archives.")
-    arg_parser_backup.add_argument('backup_directory', help='The top directory to back up', metavar='top_dir')
-    arg_parser_backup.add_argument('backup_vault_name', help='The name of the vault to upload the archive to',
+    arg_parser_backup.add_argument('--backup_directory', "-b",
+                                   help='The top directory to back up', metavar='top_dir')
+    arg_parser_backup.add_argument('--vault_name', "-v",
+                                   help='The name of the vault to upload the archive to',
                                    metavar='vault_name')
     arg_parser_backup.add_argument('--no-backup',
                                    help='If passed, the backup operation will not take place, going straight to the maintenance operations',
@@ -47,10 +51,10 @@ def __parse_cmd_args(options_namespace):
 
     arg_parser_retrieve = subparsers.add_parser('retrieve', help="Retrieve a \
      directory tree from the specified vault and download it to the local system.")
-    arg_parser_retrieve.add_argument('vault_name', help='The name of the vault to download from.')
-    arg_parser_retrieve.add_argument('top_path', help="The relative directory of the top directory to download.\
+    arg_parser_retrieve.add_argument('--vault_name', help='The name of the vault to download from.')
+    arg_parser_retrieve.add_argument('--top_path', help="The relative directory of the top directory to download.\
                                      Use --list for a list of directories available.")
-    arg_parser_retrieve.add_argument('download_location', help="The local directory to download the file tree to.")
+    arg_parser_retrieve.add_argument('--download_location', help="The local directory to download the file tree to.")
     arg_parser_retrieve.add_argument('--list', help="Print a list of the directories available for download.",
                                      action='store_true', dest="list_uploaded_archives")
 

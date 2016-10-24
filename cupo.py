@@ -302,7 +302,7 @@ if __name__ == "__main__":
     if not os.path.exists(root_dir):
         raise ValueError("%s does not exist" % root_dir)
 
-    aws_vault_name = args.backup_vault_name
+    aws_vault_name = args.vault_name
 
     if not args.no_backup:
 
