@@ -17,10 +17,10 @@ feature_row:
 The core of Cupo is all Python, so just grab a copy of the source. You can either clone the GitHub repository or download an archive.
 
 ### Windows users
-Download the source zip file: <i class="fa fa-archive"></i> [Download .zip archive({{ site.github.releases[0].zipball_url }})]
+Download the source zip file: <i class="fa fa-archive"></i> [Download .zip archive]({{ site.github.releases[0].zipball_url }})
 
 ### \*nix users
-Download the source tarball: <i class="fa fa-archive"></i> [Download .tar.gz archive({{ site.github.releases[0].tarball_url }})]
+Download the source tarball: <i class="fa fa-archive"></i> [Download .tar.gz archive]({{ site.github.releases[0].tarball_url }})
 
 ## Unstable version
 
