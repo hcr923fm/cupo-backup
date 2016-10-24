@@ -22,6 +22,8 @@ Download the source zip file: [![Zip Archive download](https://calmcl1.github.io
 ### \*nix users
 Download the source tarball: [![TGZ Archive download](https://calmcl1.github.io/cupo-backup/images/arch-tgz.png)]({{ site.github.releases[0].tarball_url }})
 
+## Unstable version
+
 ### Git users
 
 Just clone the repository:
