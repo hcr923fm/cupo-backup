@@ -11,20 +11,20 @@ class cmdOptions():
 def __parse_cmd_args(options_namespace):
     arg_parser = argparse.ArgumentParser(
         description='A tool to manage differential file uploads to an Amazon Glacier repository')
-    arg_parser.add_argument('--account-id', "-i", help='The AWS ID of the account that owns the specified vault',
+    arg_parser.add_argument( "-i", '--account-id', help='The AWS ID of the account that owns the specified vault',
                             metavar='aws_acct_id')
-    arg_parser.add_argument('--aws-profile', "-p",
+    arg_parser.add_argument("-p", '--aws-profile',
                             help='If supplied, the "--profile" switch will be passed to the AWS CLI for credential management.')
-    arg_parser.add_argument('--database', "-d",
+    arg_parser.add_argument("-d", '--database',
                             help='The database name to connect to.',
                             metavar='DB_NAME')
-    arg_parser.add_argument('--debug', "-v",
+    arg_parser.add_argument("-v", '--debug',
                             help='If passed, the default logging level will be set to DEBUG.',
                             action='store_true')
-    arg_parser.add_argument('--logging-dir', "-l",
+    arg_parser.add_argument("-l", '--logging-dir',
                             help='The log will be stored in this directory, if passed.',
                             default=os.path.expanduser('~'))
-    arg_parser.add_argument('--config-file', "-c",
+    arg_parser.add_argument("-c", '--config-file',
                             help='Loads options from a config file.',
                             default=os.path.expanduser("~/.cupo.json"))
 
@@ -34,9 +34,9 @@ def __parse_cmd_args(options_namespace):
     arg_parser_backup = subparsers.add_parser('backup',
                                               help="Execute incremental backup of a directory to an Amazon Glacier \
                                               vault, and prune any outdated archives.")
-    arg_parser_backup.add_argument('--backup_directory', "-b",
+    arg_parser_backup.add_argument("-b", '--backup_directory',
                                    help='The top directory to back up', metavar='top_dir')
-    arg_parser_backup.add_argument('--vault_name', "-v",
+    arg_parser_backup.add_argument("-n", '--vault_name',
                                    help='The name of the vault to upload the archive to',
                                    metavar='vault_name')
     arg_parser_backup.add_argument('--no-backup',
@@ -51,8 +51,8 @@ def __parse_cmd_args(options_namespace):
 
     arg_parser_retrieve = subparsers.add_parser('retrieve', help="Retrieve a \
      directory tree from the specified vault and download it to the local system.")
-    arg_parser_retrieve.add_argument('--vault_name', help='The name of the vault to download from.')
-    arg_parser_retrieve.add_argument('--top_path', help="The relative directory of the top directory to download.\
+    arg_parser_retrieve.add_argument("-n", '--vault_name', help='The name of the vault to download from.')
+    arg_parser_retrieve.add_argument("-r", '--top_path', help="The relative directory of the top directory to download.\
                                      Use --list for a list of directories available.")
     arg_parser_retrieve.add_argument('--download_location', help="The local directory to download the file tree to.")
     arg_parser_retrieve.add_argument('--list', help="Print a list of the directories available for download.",
