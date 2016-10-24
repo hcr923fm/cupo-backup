@@ -27,8 +27,9 @@ def __parse_cmd_args(options_namespace):
     arg_parser.add_argument('--config-file', "-c",
                             help='Loads options from a config file.')
 
-    subparsers = arg_parser.add_subparsers(help="Run HCRBackup [ backup | new-vault ] --help for more info on each command.",
-                                           dest="subparser_name")
+    subparsers = arg_parser.add_subparsers(
+        help="Run HCRBackup [ backup | new-vault ] --help for more info on each command.",
+        dest="subparser_name")
     arg_parser_backup = subparsers.add_parser('backup', help="Execute incremental backup of a directory to an Amazon Glacier \
                                               vault, and prune any outdated archives.")
     arg_parser_backup.add_argument('backup_directory', help='The top directory to back up', metavar='top_dir')
