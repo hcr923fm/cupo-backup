@@ -99,7 +99,7 @@ def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id, du
             # AWS URI and location, but don't touch the archive.
             logger.info("Dummy upload - not actually uploading archive!")
             aws_params = {}
-            aws_params["archiveId"] = "{0}-hcrbackup-{1}".format(aws_vault, time.time())
+            aws_params["archiveId"] = "{0}-cupo-{1}".format(aws_vault, time.time())
             aws_params["location"] = "aws://dummy-uri-" + aws_params["archiveId"]
             aws_params["checksum"] = archive_treehash
 
@@ -335,12 +335,12 @@ if __name__ == "__main__":
                                                                                        backup_subdir_rel_filename)
 
             if most_recent_version:
-                logger.info("Archive for this path exists in local database")
+                logger.info("Comparing archive against most recent uploaded version")
                 hash_remote = most_recent_version['treehash']
                 size_remote = most_recent_version['size']
 
             else:
-                logger.info("No archive found for this path in local database")
+                logger.info("First time this directory has been archived")
                 hash_remote = size_remote = None
 
             # Compare it against the local copy of the Glacier version of the archive
@@ -349,6 +349,7 @@ if __name__ == "__main__":
             # If the hashes are the same - don't upload the archive; it already exists
             if not compare_files(size_arch, archive_hash, size_remote, hash_remote):
                 # Otherwise, upload the archive
+                logger.info("Directory has changed since most recent upload")
                 upload_status = upload_archive(tmp_archive_fullpath, aws_vault_name, archive_hash, args.account_id,
                                                args.dummy_upload)
                 if upload_status:
