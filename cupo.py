@@ -281,19 +281,16 @@ if __name__ == "__main__":
             "MongoDB database has not been supplied. Use '--database' or specify the 'database' option in a config file.")
         exit(1)
 
-    aws_account_id = args.account_id
-    db_name = args.database
-    aws_profile = args.aws_profile or None
-    db_client, db = cupocore.mongoops.connect(db_name)
+    db_client, db = cupocore.mongoops.connect(args.database)
 
-    boto_session = boto3.Session(profile_name=aws_profile)
+    boto_session = boto3.Session(profile_name = args.aws_profile)
     boto_client = boto_session.client('glacier')
 
     # If we're only adding a new vault...
 
     if args.subparser_name == "new-vault":
         if args.new_vault_name:
-            add_new_vault(db, aws_account_id, args.new_vault_name)
+            add_new_vault(db, args.account_id, args.new_vault_name)
         else:
             logger.error("New vault name not supplied. Cannot create vault.")
         exit()
@@ -316,7 +313,7 @@ if __name__ == "__main__":
     if not os.path.exists(root_dir):
         raise ValueError("%s does not exist" % root_dir)
 
-    aws_vault_name = args.backup_vault_name
+    aws_vault_name = args.vault_name
 
     if not args.no_backup:
 
@@ -325,7 +322,7 @@ if __name__ == "__main__":
         logger.info("Created temporary directory at {0}".format(temp_dir))
 
         logger.info("Backing up {0} to {1} using AWS Account ID {2}".format(
-            root_dir, aws_vault_name, aws_account_id))
+            root_dir, aws_vault_name, args.account_id))
 
         subdirs_to_backup = list_dirs(root_dir)  # List of subtrees, relative to root_dir
         subdirs_to_backup.append(
@@ -366,7 +363,7 @@ if __name__ == "__main__":
             # If the hashes are the same - don't upload the archive; it already exists
             if not compare_files(size_arch, archive_hash, size_remote, hash_remote):
                 # Otherwise, upload the archive
-                upload_status = upload_archive(tmp_archive_fullpath, aws_vault_name, archive_hash, aws_account_id,
+                upload_status = upload_archive(tmp_archive_fullpath, aws_vault_name, archive_hash, args.account_id,
                                                args.dummy_upload)
                 if upload_status:
                     # Get vault arn:
@@ -412,7 +409,7 @@ if __name__ == "__main__":
     if not args.no_prune:
         # Find and delete old archives
         logger.info("Deleting redundant archives")
-        delete_redundant_archives(db, aws_vault_name, aws_account_id)
+        delete_redundant_archives(db, aws_vault_name, args.account_id)
     else:
         logger.info("Skipping archive pruning - '--no-prune' supplied.")
 
