@@ -112,8 +112,24 @@ def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id, du
                                                                params=aws_params))
         return aws_params
 
-    except Exception, e:
-        logger.info("Upload failed!")
+    except botocore.exceptions.ChecksumError, e:
+        logger.error("Upload failed - AWS checksum does not match local checksum")
+        return None
+
+    except botocore.exceptions.ConnectionClosedError, e:
+        logger.error("Upload failed - connection to AWS server was unexpectedly closed")
+        return None
+
+    except botocore.exceptions.EndpointConnectionError, e:
+        logger.error("Upload failed - unable to connect to AWS server")
+        return None
+
+    except botocore.exceptions.BotoCoreError, e:
+        logger.error("Upload failed - {0}".format(e.msg))
+        return None
+
+    except:
+        logger.error("Upload failed - unknown error!")
         return None
 
 
@@ -283,7 +299,7 @@ if __name__ == "__main__":
 
     db_client, db = cupocore.mongoops.connect(args.database)
 
-    boto_session = boto3.Session(profile_name = args.aws_profile)
+    boto_session = boto3.Session(profile_name=args.aws_profile)
     boto_client = boto_session.client('glacier')
 
     # If we're only adding a new vault...
