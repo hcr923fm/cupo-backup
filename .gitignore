@@ -71,5 +71,6 @@ target/
 /test_src
 /not_test_src
 test_config.yml
+test-src
 
 # Created by .ignore support plugin (hsz.mobi)
