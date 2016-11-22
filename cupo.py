@@ -42,7 +42,9 @@ def archive_directory(top_dir, subdir, tmpdir):
 
         logger.info("Archiving %s to %s" % (subdir, archive_file_path))
 
-        devnull = open(os.devnull, "w")
+        # with open(os.devnull, "w") as devnull:
+
+        devnull = open(os.devnull, "wb")
         try:
             subprocess.check_call(
                 ["7z", "a", "-t7z", archive_file_path, os.path.join(full_backup_path, "*"),
@@ -57,23 +59,24 @@ def archive_directory(top_dir, subdir, tmpdir):
                 # Warning (Non fatal error(s)). For example, one or more files were locked by some
                 # other application, so they were not compressed.
                 logger.info("7-Zip: Non-fatal error (return code 1)")
+                return None
             elif ret_code == 2:
                 # Fatal error
                 logger.info("7-Zip: Fatal error (return code 2)")
+                return None
             elif ret_code == 7:
                 # Command-line error
                 logger.info("7-Zip: Command-line error (return code 7)\n%s"
                             % e.cmd)
+                return None
             elif ret_code == 8:
                 # Not enough memory for operation
                 logger.info("7-Zip: Not enough memory for operation (return code 8)")
+                return None
             elif ret_code == 255:
                 # User stopped the process
                 logger.info("7-Zip: User stopped the process (return code 255)")
-
-        finally:
-            devnull.close()
-            return None
+                return None
 
 
 def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id, dummy=False):
@@ -156,7 +159,7 @@ def delete_aws_archive(archive_id, aws_vault):
         return None
 
     except botocore.exceptions.ClientError, e:
-        logger.error("AWS archive removal failed - {0}".format(e.response["Message"]))
+        logger.error("AWS archive removal failed - {0}".format(e.response["Error"]["Message"]))
         return None
 
     except botocore.exceptions.BotoCoreError, e:
@@ -217,7 +220,7 @@ def add_new_vault(db, aws_account_id, vault_name):
         return None
 
     except botocore.exceptions.ClientError, e:
-        logger.error("AWS vault creation failed - {0}".format(e.response["Message"]))
+        logger.error("AWS vault creation failed - {0}".format(e.response["Error"]["Message"]))
         return None
 
     except botocore.exceptions.BotoCoreError, e:
