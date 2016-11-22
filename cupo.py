@@ -108,7 +108,7 @@ def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id, du
             return None
 
         except botocore.exceptions.BotoCoreError, e:
-            logger.error("Upload failed - {0}".format(e.msg))
+            logger.error("Upload failed - {0}".format(e.message))
             return None
 
         except:
@@ -206,6 +206,7 @@ def add_new_vault(db, aws_account_id, vault_name):
         # The URI of the vault that was created.
         aws_vault_arn = response["location"]
         logger.info("Successfully created AWS vault {0}:\n {1}".format(vault_name, aws_vault_arn))
+        return cupocore.mongoops.create_vault_entry(db, aws_vault_arn, vault_name)
 
     except botocore.exceptions.ConnectionClosedError, e:
         logger.error("AWS vault creation failed - connection to AWS server was unexpectedly closed")
@@ -228,8 +229,6 @@ def add_new_vault(db, aws_account_id, vault_name):
 
     finally:
         devnull.close()
-
-    return cupocore.mongoops.create_vault_entry(db, aws_vault_arn, vault_name)
 
 
 def init_logging():
@@ -448,7 +447,7 @@ if __name__ == "__main__":
     if not args.no_prune:
         # Find and delete old archives
         logger.info("Deleting redundant archives")
-        delete_redundant_archives(db, aws_vault_name, args.account_id)
+        delete_redundant_archives(db, aws_vault_name)
     else:
         logger.info("Skipping archive pruning - '--no-prune' supplied.")
 
