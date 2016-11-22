@@ -9,7 +9,6 @@ import boto3
 import time
 import logging, logging.handlers
 import cupocore
-import pymongo.errors
 
 
 # TODO-refactor: Move old archive detection into own method, and add unique path detection, so not only triggered when adding new archives.
@@ -227,8 +226,8 @@ def add_new_vault(db, aws_account_id, vault_name):
     except Exception, e:
         logger.error("AWS vault creation failed - {0}".format(e.message))
 
-    finally: devnull.close()
-
+    finally:
+        devnull.close()
 
     return cupocore.mongoops.create_vault_entry(db, aws_vault_arn, vault_name)
 
@@ -238,6 +237,8 @@ def init_logging():
     # and a STDERR log at the specified level.
 
     logger = logging.Logger("cupobackup{0}".format(os.getpid()))
+    cupocore.mongoops.logger = logger
+
     log_rotating = logging.handlers.RotatingFileHandler(filename=os.path.join(args.logging_dir, '.cupoLog'),
                                                         maxBytes=10485760,  # 10MB
                                                         backupCount=5)

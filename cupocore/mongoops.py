@@ -1,5 +1,6 @@
-import pymongo
+import pymongo, pymongo.errors
 import time, datetime
+import logging
 
 
 # Use the format:
@@ -30,6 +31,8 @@ import time, datetime
 #     "job_last_polled_time":         0123456789
 # })
 
+logger = logging.Logger("cupo-tempMongoLogger")
+
 
 def create_backup_database(database_name, db_client, drop_existing=True):
     """
@@ -44,12 +47,26 @@ def create_backup_database(database_name, db_client, drop_existing=True):
     if drop_existing and (database_name in db_client.database_names()):
         db_client.drop_database(database_name)
 
-    db = db_client[database_name]
-    db.create_collection('archives')
-    db.create_collection('vaults')
-    db.create_collection('jobs')
+    try:
+        db = db_client[database_name]
+        db.create_collection('archives')
+        db.create_collection('vaults')
+        db.create_collection('jobs')
 
-    return db
+        return db
+
+    except pymongo.errors.ConnectionFailure, e:
+        logger.error("Database creation failed - lost connection to MongoDB instance")
+    except pymongo.errors.ExecutionTimeout,e:
+        logger.error("Database creation failed - operation execution timed out")
+    except pymongo.errors.WriteError,e:
+        logger.error("Database creation failed - could not write to database")
+    except pymongo.errors.PyMongoError, e:
+        logger.error("Database creation failed - MongoDB error '{0}'".format(e.message))
+    except Exception, e:
+        logger.error("Database creation failed - '{0}'".format(e.message))
+    finally:
+        return None
 
 
 def create_vault_entry(db, vault_arn, vault_name):
