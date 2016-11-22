@@ -167,10 +167,11 @@ def delete_aws_archive(archive_id, aws_vault):
     except Exception, e:
         logger.error("AWS archive removal failed - {0}".format(e.message))
 
-def delete_redundant_archives(db, aws_vault_name, aws_account_id):
+
+def delete_redundant_archives(db, aws_vault_name):
     redundant_archives = cupocore.mongoops.get_archives_to_delete(db)
     for arch in redundant_archives:
-        deleted_aws = delete_aws_archive(arch["_id"], aws_vault_name, aws_account_id)
+        deleted_aws = delete_aws_archive(arch["_id"], aws_vault_name)
         if deleted_aws:
             cupocore.mongoops.delete_archive_document(db, arch["_id"])
             logger.info("Deleted archive with ID {0} from local database".format(arch["_id"]))
@@ -207,26 +208,29 @@ def add_new_vault(db, aws_account_id, vault_name):
         aws_vault_arn = response["location"]
         logger.info("Successfully created AWS vault {0}:\n {1}".format(vault_name, aws_vault_arn))
 
-    except botocore.exceptions.BotoCoreError, e:
-        logger.error("Was not able to create new vault on Glacier.")
-        logger.debug(e.message)
+    except botocore.exceptions.ConnectionClosedError, e:
+        logger.error("AWS vault creation failed - connection to AWS server was unexpectedly closed")
         return None
 
-    try:
-        cupocore.mongoops.create_vault_entry(db, aws_vault_arn, vault_name)
-        logger.info("Created database entry for vault {0}".format(vault_name))
-        return 1
+    except botocore.exceptions.EndpointConnectionError, e:
+        logger.error("AWS vault creation failed - unable to connect to AWS server")
+        return None
 
-    except pymongo.errors.PyMongoError:
-        logging.error(
-            "Was not able to create database entry for new AWS vault {0} - items uploaded to this vault may not be correctly tracked!").format(
-            vault_name)
+    except botocore.exceptions.ClientError, e:
+        logger.error("AWS vault creation failed - {0}".format(e.response["Message"]))
+        return None
+
+    except botocore.exceptions.BotoCoreError, e:
+        logger.error("AWS vault creation failed - {0}".format(e.message))
         return None
 
     except Exception, e:
-        logger.error("Failed to create new vault!")
-        # TODO: Make this exception less shit (:
-        return None
+        logger.error("AWS vault creation failed - {0}".format(e.message))
+
+    finally: devnull.close()
+
+
+    return cupocore.mongoops.create_vault_entry(db, aws_vault_arn, vault_name)
 
 
 def init_logging():
