@@ -42,15 +42,16 @@ def archive_directory(top_dir, subdir, tmpdir):
         archive_file_path = os.path.join(tmpdir, os.path.basename(subdir)) + ".7z"
 
         logger.info("Archiving %s to %s" % (subdir, archive_file_path))
+
+        devnull = open(os.devnull, "w")
         try:
-            devnull = open(os.devnull, "w")
             subprocess.check_call(
                 ["7z", "a", "-t7z", archive_file_path, os.path.join(full_backup_path, "*"),
                  "-m0=BZip2", "-y", "-aoa", "-xr-!*/", "-xr-!*sync-conflict*",
                  "-xr-!*desktop.ini", "-xr-!*.tmp", "-xr-!*thumbs.db"], stdout=devnull, stderr=devnull)
-            devnull.close()
             logger.info("Created archive at %s" % archive_file_path)
             return archive_file_path
+
         except subprocess.CalledProcessError, e:
             ret_code = e.returncode
             if ret_code == 1:
@@ -70,70 +71,73 @@ def archive_directory(top_dir, subdir, tmpdir):
             elif ret_code == 255:
                 # User stopped the process
                 logger.info("7-Zip: User stopped the process (return code 255)")
+
+        finally:
+            devnull.close()
             return None
 
 
 def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id, dummy=False):
     logger.info("Uploading {0} to vault {1}".format(archive_path, aws_vault))
 
-    try:
-        if not dummy:
-            response = {}
+    if not dummy:
+        try:
             with open(archive_path, 'rb') as body:
-                response = boto_client.upload_archive(vaultName=aws_vault,
-                                                      accountId=aws_account_id,
-                                                      archiveDescription=archive_path,
-                                                      body=body)
-            aws_params = response
+                aws_params = boto_client.upload_archive(vaultName=aws_vault,
+                                                        accountId=aws_account_id,
+                                                        archiveDescription=archive_path,
+                                                        body=body)
 
-            # Returned fields from upload:
-            # location -> (string)
-            # The relative URI path of the newly added archive resource.
-            # checksum -> (string)
-            # The checksum of the archive computed by Amazon Glacier.
-            # archiveId -> (string)
-            # The ID of the archive. This value is also included as part of the location.
+                # Returned fields from upload:
+                # location -> (string)
+                # The relative URI path of the newly added archive resource.
+                # checksum -> (string)
+                # The checksum of the archive computed by Amazon Glacier.
+                # archiveId -> (string)
+                # The ID of the archive. This value is also included as part of the location.
+
+        except botocore.exceptions.ChecksumError, e:
+            logger.error("Upload failed - AWS checksum does not match local checksum")
+            return None
+
+        except botocore.exceptions.ConnectionClosedError, e:
+            logger.error("Upload failed - connection to AWS server was unexpectedly closed")
+            return None
+
+        except botocore.exceptions.EndpointConnectionError, e:
+            logger.error("Upload failed - unable to connect to AWS server")
+            return None
+
+        except botocore.exceptions.BotoCoreError, e:
+            logger.error("Upload failed - {0}".format(e.msg))
+            return None
+
+        except:
+            logger.error("Upload failed - unknown error!")
+            return None
+
+    else:
+        # This is a dummy upload, for testing purposes. Create a fake
+        # AWS URI and location, but don't touch the archive.
+        logger.info("Dummy upload - not actually uploading archive!")
+
+        arch_id = "{0}-hcrbackup-{1}".format(aws_vault, time.time())
+
+        aws_params = {"archiveId": arch_id,
+                      "location": "aws://dummy-uri-{0}".format(arch_id),
+                      "checksum": archive_treehash
+                      }
+
+    logger.info("Uploaded archive {archpath} \n \
+                  Returned fields: \n \
+                  \tlocation: {params[location]} \n \
+                  \tchecksum: {params[checksum]} \n \
+                  \tarchiveId: {params[archiveId]}".format(archpath=archive_path,
+                                                           params=aws_params))
+    return aws_params
 
 
-        else:
-            # This is a dummy upload, for testing purposes. Create a fake
-            # AWS URI and location, but don't touch the archive.
-            logger.info("Dummy upload - not actually uploading archive!")
-            aws_params = {}
-            aws_params["archiveId"] = "{0}-hcrbackup-{1}".format(aws_vault, time.time())
-            aws_params["location"] = "aws://dummy-uri-" + aws_params["archiveId"]
-            aws_params["checksum"] = archive_treehash
-
-        logger.info("Uploaded archive {archpath} \n \
-                      Returned fields: \n \
-                      \tlocation: {params[location]} \n \
-                      \tchecksum: {params[checksum]} \n \
-                      \tarchiveId: {params[archiveId]}".format(archpath=archive_path,
-                                                               params=aws_params))
-        return aws_params
-
-    except botocore.exceptions.ChecksumError, e:
-        logger.error("Upload failed - AWS checksum does not match local checksum")
-        return None
-
-    except botocore.exceptions.ConnectionClosedError, e:
-        logger.error("Upload failed - connection to AWS server was unexpectedly closed")
-        return None
-
-    except botocore.exceptions.EndpointConnectionError, e:
-        logger.error("Upload failed - unable to connect to AWS server")
-        return None
-
-    except botocore.exceptions.BotoCoreError, e:
-        logger.error("Upload failed - {0}".format(e.msg))
-        return None
-
-    except:
-        logger.error("Upload failed - unknown error!")
-        return None
-
-
-def delete_aws_archive(archive_id, aws_vault, aws_account_id):
+def delete_aws_archive(archive_id, aws_vault):
     logger.info("Deleting archive with id {0} from vault {1}".format(
         archive_id, aws_vault))
 
@@ -144,10 +148,24 @@ def delete_aws_archive(archive_id, aws_vault, aws_account_id):
         logger.info("Successfully deleted archive from AWS")
         return 1
 
-    except Exception, e:
-        logger.info("Failed to delete archive from AWS!")
+    except botocore.exceptions.ConnectionClosedError, e:
+        logger.error("AWS archive removal failed - connection to AWS server was unexpectedly closed")
         return None
 
+    except botocore.exceptions.EndpointConnectionError, e:
+        logger.error("AWS archive removal failed - unable to connect to AWS server")
+        return None
+
+    except botocore.exceptions.ClientError, e:
+        logger.error("AWS archive removal failed - {0}".format(e.response["Message"]))
+        return None
+
+    except botocore.exceptions.BotoCoreError, e:
+        logger.error("AWS archive removal failed - {0}".format(e.message))
+        return None
+
+    except Exception, e:
+        logger.error("AWS archive removal failed - {0}".format(e.message))
 
 def delete_redundant_archives(db, aws_vault_name, aws_account_id):
     redundant_archives = cupocore.mongoops.get_archives_to_delete(db)
