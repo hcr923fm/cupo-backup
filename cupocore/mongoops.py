@@ -1,7 +1,8 @@
 import pymongo, pymongo.errors
 import time, datetime
-import logging
+import logging, os
 
+logger = logging.getLogger("cupobackup{0}.mongoOps".format(os.getpid()))
 
 # Use the format:
 #
@@ -30,8 +31,6 @@ import logging
 #     "job_retrieval_destination":    "/path/to/download" Only if job_type is 'retrieval'
 #     "job_last_polled_time":         0123456789
 # })
-
-logger = logging.Logger("cupo-tempMongoLogger")
 
 
 def create_backup_database(database_name, db_client, drop_existing=True):

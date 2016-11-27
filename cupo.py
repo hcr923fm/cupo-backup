@@ -238,8 +238,7 @@ def init_logging():
     # Set up some logs - one rotating log, which contains all the debug output
     # and a STDERR log at the specified level.
 
-    logger = logging.Logger("cupobackup{0}".format(os.getpid()))
-    cupocore.mongoops.logger = logger
+    logger = logging.getLogger("cupobackup{0}".format(os.getpid()))
 
     log_rotating = logging.handlers.RotatingFileHandler(filename=os.path.join(args.logging_dir, '.cupoLog'),
                                                         maxBytes=10485760,  # 10MB
@@ -277,14 +276,9 @@ def init_job_retrieval(db, vault_name, archive_id, download_location):
     # TODO-retrieval #8 Make job retrieval work
     raise NotImplementedError
 
-    job_params = {
-        "Format": "JSON",
-        "Type": "archive-retrieval",
-        "ArchiveID": archive_id
-    }
-    init_job_ret = boto_client.initiate_job(accountId=args.account_id,
-                                            vaultName=args.vault_name,
-                                            jobParameters=job_params)
+    mgr = cupocore.RetrievalManager.RetrievalManager(boto_client, vault_name)
+
+    init_job_ret = mgr.initiate_retrieval(archive_id)
 
     if init_job_ret:
         cupocore.mongoops.create_retrieval_entry(db,
