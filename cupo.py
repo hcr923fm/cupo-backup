@@ -1,6 +1,3 @@
-__author__ = 'Callum McLean <calmcl1@aol.com>'
-__version__ = '0.1.0'
-
 import os, os.path
 import subprocess
 import tempfile
@@ -10,11 +7,16 @@ import time
 import logging, logging.handlers
 import cupocore
 
+__author__ = 'Callum McLean <calmcl1@aol.com>'
+__version__ = '0.1.0'
 
-# TODO-refactor: Move old archive detection into own method, and add unique path detection, so not only triggered when adding new archives.
+
+# TODO-refactor: Move old archive detection into own method, and add unique path detection, so not only triggered when
+#  adding new archives.
 # TODO-ratelimit: #1 Add network rate limiting
 # TODO-backupscount: #2 Add a way of specifying the amount of redundant backups that should be kept
-# TODO-backupsage: #3 Specify the minimum amount of time that a backup should be kept for if there are more than <min amount> of backups remaining.
+# TODO-backupsage: #3 Specify the minimum amount of time that a backup should be kept for if there are more than
+# <min amount> of backups remaining.
 
 
 # Only the *files* in a given directory are archived, not the subdirectories.
@@ -98,15 +100,15 @@ def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id, du
                 # archiveId -> (string)
                 # The ID of the archive. This value is also included as part of the location.
 
-        except botocore.exceptions.ChecksumError, e:
+        except botocore.exceptions.ChecksumError:
             logger.error("Upload failed - AWS checksum does not match local checksum")
             return None
 
-        except botocore.exceptions.ConnectionClosedError, e:
+        except botocore.exceptions.ConnectionClosedError:
             logger.error("Upload failed - connection to AWS server was unexpectedly closed")
             return None
 
-        except botocore.exceptions.EndpointConnectionError, e:
+        except botocore.exceptions.EndpointConnectionError:
             logger.error("Upload failed - unable to connect to AWS server")
             return None
 
@@ -150,11 +152,11 @@ def delete_aws_archive(archive_id, aws_vault):
         logger.info("Successfully deleted archive from AWS")
         return 1
 
-    except botocore.exceptions.ConnectionClosedError, e:
+    except botocore.exceptions.ConnectionClosedError:
         logger.error("AWS archive removal failed - connection to AWS server was unexpectedly closed")
         return None
 
-    except botocore.exceptions.EndpointConnectionError, e:
+    except botocore.exceptions.EndpointConnectionError:
         logger.error("AWS archive removal failed - unable to connect to AWS server")
         return None
 
@@ -274,18 +276,10 @@ def print_file_list(db, vault_name):
 
 def init_job_retrieval(db, vault_name, archive_id, download_location):
     # TODO-retrieval #8 Make job retrieval work
-    raise NotImplementedError
 
-    mgr = cupocore.RetrievalManager.RetrievalManager(boto_client, vault_name)
+    mgr = cupocore.RetrievalManager.RetrievalManager(db, boto_client, vault_name)
 
-    init_job_ret = mgr.initiate_retrieval(archive_id)
-
-    if init_job_ret:
-        cupocore.mongoops.create_retrieval_entry(db,
-                                                 cupocore.mongoops.get_vault_by_name(db, vault_name)["arn"],
-                                                 init_job_ret["jobId"],
-                                                 init_job_ret["location"],
-                                                 download_location)
+    mgr.initiate_retrieval(archive_id, download_location)
 
 
 if __name__ == "__main__":
