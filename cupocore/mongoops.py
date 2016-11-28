@@ -4,6 +4,7 @@ import logging, os
 
 logger = logging.getLogger("cupobackup{0}.mongoOps".format(os.getpid()))
 
+
 # Use the format:
 #
 # db.archives.insert_one({
@@ -56,9 +57,9 @@ def create_backup_database(database_name, db_client, drop_existing=True):
 
     except pymongo.errors.ConnectionFailure, e:
         logger.error("Database creation failed - lost connection to MongoDB instance")
-    except pymongo.errors.ExecutionTimeout,e:
+    except pymongo.errors.ExecutionTimeout, e:
         logger.error("Database creation failed - operation execution timed out")
-    except pymongo.errors.WriteError,e:
+    except pymongo.errors.WriteError, e:
         logger.error("Database creation failed - could not write to database")
     except pymongo.errors.PyMongoError, e:
         logger.error("Database creation failed - MongoDB error '{0}'".format(e.message))
@@ -100,16 +101,28 @@ def create_archive_entry(db, archived_dir_path, vault_arn, aws_archive_id,
     return db['archives'].insert(doc_arch)
 
 
-def create_retrieval_entry(db, vault_arn, aws_job_id, aws_job_location, download_path):
+def create_retrieval_entry(db, vault_arn, archive_id, aws_job_id, aws_job_location, download_path):
     doc_entry = {}
     doc_entry["_id"] = aws_job_id
     doc_entry["location"] = aws_job_location
     doc_entry["vault_arn"] = vault_arn
     doc_entry["job_type"] = "retrieval"
     doc_entry["job_retrieval_destination"] = download_path
+    doc_entry["archive_id"] = archive_id
     doc_entry["job_last_polled_time"] = time.time()
 
-    return db['jobs'].insert(doc_entry)
+    return db['jobs'].insert_one(doc_entry)
+
+
+def delete_retrieval_entry(db, entry_id):
+    return db["jobs"].delete_one({"_id": entry_id})
+
+
+def get_oldest_retrieval_entry(db, vault_name):
+    vault = get_vault_by_name(db, vault_name)
+    return db["archives"].find_one(
+        {"job_type": "retrieval"},
+        sort=[('uploaded_time', pymongo.ASCENDING)])
 
 
 def get_list_of_paths_in_vault(db, vault_name):
@@ -193,6 +206,9 @@ def get_archive_by_path(db, vault_name, path, retrieve_subpath_archs=False):
 
         return arch_list
 
+
+def get_archive_by_id(db, archive_id):
+    return db["archives"].find_one({"_id": archive_id})
 
 
 def delete_archive_document(db, archive_id):
