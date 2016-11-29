@@ -8,7 +8,7 @@ permalink: /quick-start/
 Getting started with Cupo is fairly straightforward – I think! It's as simple as installing the software and it's dependencies, creating a config file, creating a vault on AWS and storing our files in it.
 
 Note: This guide assumes that you have Python (v2) installed. Cupo is just a set of Python scripts, so Python is kind of important. You'll need ``pip`` as well.
-{:.notice--warning}
+{:.notice--info}
 
 ## Installing Cupo
 
