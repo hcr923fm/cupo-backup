@@ -26,6 +26,16 @@ __version__ = '0.1.0'
 # The name of each archive is equal to the name of the directory.
 
 def archive_directory(top_dir, subdir, tmpdir):
+    """
+    .. function:: archive_directory(top_dir, subdir, tmpdir)
+
+    Given a sub-directory name under the root directory to be archived, archive the contents of the sub-directory
+    to a temporary directory. Then return the full path to the temporary directory.
+    :param top_dir: The root path that will be archived and uploaded to Glacier.
+    :param subdir: The path to the subdirectory that is being archived here, relative to `top_dir`
+    :param tmpdir: The path to the temporary directory to store archives in until they are uploaded to Glacier
+    :return: If the subdirectory contains files, then the full path to the temporary archives; otherwise, None
+    """
     # We're only archiving the *files* in this directory, not the subdirectories.
 
     files = []

@@ -10,6 +10,7 @@ Contents:
 
 .. toctree::
    :maxdepth: 2
+.. autofunction:: cupo.archive_directory
 
 
 
