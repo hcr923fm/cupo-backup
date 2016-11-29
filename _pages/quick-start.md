@@ -3,64 +3,76 @@ permalink: /quick-start/
 ---
 {% include toc %}
 
-# Getting Started
-So, you want to start a backup system...
+# Quick Start
 
-## Installing
+Getting started with Cupo is fairly straightforward – I think! It's as simple as installing the software and it's dependencies, creating a config file, creating a vault on AWS and storing our files in it.
 
-### Prerequisites
-* Python < 2.7+ *(but not Python 3 - yet)*
-* Amazon AWS command-line interface
-* MongoDB
-* `python-botocore`
-* `python-boto3`
-* `p7zip-full` *(must be the 'full' version!)*
+.. note:: This guide assumes that you have Python (v2) installed. Cupo is just a set of Python scripts, so Python is kind of important. You'll need ``pip`` as well.
 
-#### Installing and Configuring Prerequisites
-* Use the following command to install most of the dependencies from apt:
-`sudo apt-get install python-all python-pip python-botocore python-boto3 p7zip-full`
-* Install MongoDB for your system as described [in the MongoDB docs](http://docs.mongodb.com/manual/administration/install-on-linux).
-* Once that's completed, install the AWS command-line tool:
-`pip install awscli`
-* The AWS CLI needs to be configured before it can be used. Run:
-`aws --configure`
-and supply your AWS credentials.
-* MongoDB needs a data directory to run - by default it's `/data/db`. Create this directory, and make sure that the current user is a member of the `mongodb` group, and that the group has full permissions to that directory:
-`mkdir -p /data/db; usermod -a -G mongodb <username>; chgrp -R mongodb /data/db`
+## Installing Cupo
 
-### Grabbing the Source
-Download a copy of the source from [here](https://calmcl1.github.com/cupo-backup/get-cupo).
+### Installing the Prerequisites
 
-## Usage
+Cupo depends on a few things to make the backend work - namely: 7-Zip, MongoDB, the AWS CLI, `pymongo` (the MongoDB Python bindings), and `boto3` (the AWS Python bindings.) We'll grab these now.
 
-Cupo will take care of most of the process of backing up archives and retrieving them from Glacier. As such, to avoid a complicated command string, it's easiest to use a config file. Cupo can generate a default one for you at a specified location - just run `cupo.py sample-config /path/to/config/file`.
+* Firstly, download and install MongoDB as per [the MongoDB documentation](https://docs.mongodb.com/manual/installation/#mongodb-community-edition>) - don't forget to create the MongoDB `data` directory, either `C:\\Data` or `/var/lib/mongodb`
+* Then, download 7-Zip.
+	* On Debian: `apt install p7zip-full`
+	* Others: Go to the [7-Zip website](http://www.7-zip.org/download.html) and download and install the correct version of 7-Zip for you.
+* Then, the rest can be installed with `pip`.
+	* On Windows: `python -m pip install pymongo boto3 awscli`
+	* On Linux/OSX: `pip install pymongo boto3 awscli`
 
-In there, you will find most of the common options that are required to run any Cupo command. To tell Cupo that you are using a config file, use `cupo.py -c /path/to/config/file`.
+### Configuring AWS
 
-### Creating a New Vault
-To start off, create a new vault in Glacier (or, if a vault that you want to use already exists in AWS, register it in the local database):
+In order for Cupo (or any application that uses AWS, for that matter) to be able to use AWS on your behalf, you'll need to use the AWS CLI to store your credentials. It's quick and simple – just run:
 
-* `cupo.py -c /path/to/config/file new-vault NEW_VAULT_NAME`, or
-* `cupo.py --account-id AWS_ACCOUNT_ID --database DATABASE_NAME new-vault NEW_VAULT_NAME`
+``aws configure``
 
-where:
+and follow the instructions in the terminal.
 
-* `AWS_ACCOUNT_ID` is, unsurprisingly, the account ID associated with your AWS account - a numerical value.
-* `DATABASE_NAME` is the name of the MongoDB database that we're using to store the local Glacier archive tracking data in. It will be created if it does not already exist.
-* `NEW_VAULT_NAME` is the name of the Glacier vault that we're storing the the backup archives in. It will be created in Glacier if it does not yet exist.
+### Getting the Cupo Source
+Getting Cupo itself is as easy as downloading the source archive.
 
-### Backing Up a Directory
+* Zip archive: <i class="fa fa-archive"></i> [Download .zip archive]({{ site.github.releases[0].zipball_url }})
+* Tar archive: <i class="fa fa-archive"></i> [Download .tar.gz archive]({{ site.github.releases[0].tarball_url }})
 
-Now, it's as simple as specifying a directory to back up and a vault!
+Extract the files to a directory, and you're good to go!
 
-* `cupo.py -c /path/to/config/file backup` or
-* `cupo.py --account-id AWS_ACCOUNT_ID -d DATABASE_NAME backup -r TOP_DIR -n VAULT_NAME`
+## Using Cupo
 
-where:
+Now that Cupo is good to go, we'll start by creating a vault in AWS and then upload a directory tree to it!
 
-* `TOP_DIR` is the root directory to back up.
-* `VAULT_NAME` is the Glacier vault to back up to. It will not be created if it doesn't exist - use `cupo.py new-vault` first.
+### Creating A Vault
 
-There isn't much output on the terminal, but a log will created that you can `tail -f` if you wish. The default log location is `~/.CupoLog`, but this can be changed with the `--logging-dir` switch.
+In Glacier, all your archives are stored in a vault. We'll need to create one. Run:
 
-For more info, use `cupo.py [backup | retrieve | new-vault | sample-config ] -h`.
+`cupo.py -i YOUR-AWS-ACCOUNT-ID -d MONGODB-NAME NEW-VAULT-NAME`
+
+Note the `MONGODB-NAME` parameter – Cupo uses a MongoDB database to track which archives you've uploaded, so you can use multiple databases to manage different backup systems. Just pick a name for the database.
+
+This has now created a new vault in Glacier and registered it in the local database.
+
+### Backing Up A Directory
+
+Backing up a directory tree to Glacier is simple - it's just a matter of
+
+`cupo.py [global_options] backup [backup_options]`
+
+#### Creating A Config File
+
+...but not *that* simple.
+
+See those `[global_options]` and `[backup_options]` parts above? Cupo can work with different Glacier vaults, different databases, even different AWS accounts. As such, specifiying all of that on the command line can make for a horribly complicated command-line string. Save your future self some pain and set up a config file – future you will buy you a beer in return. Anyway, Cupo will do it for you!
+
+`cupo.py sample-config /path/to/config/file`
+
+Open up the config file (it's just a JSON file) in your favourite text editor and fill in the variables. Info about all of the fields can be found in [the Config File reference](https://calmcl1.github.com/cupo-backup/config-file), but you'll only need to fill in the `database`, `vault_name`, `account_id` and `backup_directory` fields.
+
+Then, to kick off our backup operation, we can just run:
+
+`cupo.py -c /path/to/config/file backup`
+
+And watch Cupo ticking away, uploading your files to Glacier!
+
+If anything happens, you can check the output on the terminal, or in `~/.cupoLog`.
