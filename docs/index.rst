@@ -14,6 +14,12 @@ Contents:
     :members:
 .. automodule:: cupocore
     :members:
+.. automodule:: cupocore.cmdparser
+    :members:
+.. automodule:: cupocore.mongoops
+    :members:
+.. automodule:: cupocore.RetrievalManager
+    :members:
 
 
 
