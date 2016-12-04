@@ -286,24 +286,9 @@ def print_file_list(db, vault_name):
 
 
 def init_job_retrieval(db, vault_name, archive_id, download_location):
-    # TODO-retrieval #8 Make job retrieval work
-    raise NotImplementedError
 
-    job_params = {
-        "Format": "JSON",
-        "Type": "archive-retrieval",
-        "ArchiveID": archive_id
-    }
-    init_job_ret = boto_client.initiate_job(accountId=args.account_id,
-                                            vaultName=args.vault_name,
-                                            jobParameters=job_params)
-
-    if init_job_ret:
-        cupocore.mongoops.create_retrieval_entry(db,
-                                                 cupocore.mongoops.get_vault_by_name(db, vault_name)["arn"],
-                                                 init_job_ret["jobId"],
-                                                 init_job_ret["location"],
-                                                 download_location)
+    mgr = cupocore.RetrievalManager.RetrievalManager(db, boto_client, vault_name)
+    mgr.initiate_retrieval(archive_id, download_location)
 
 
 if __name__ == "__main__":

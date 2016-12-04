@@ -94,15 +94,9 @@ class RetrievalManager():
 
             if response["status"] == 200 or response["status"] == 206:
                 tmp_chunk_fd, tmp_chunk_path = tempfile.mkstemp(dir=tmp_dir)
-                f = os.fdopen(tmp_chunk_fd, "wb")
-                f.write(response["body"].read())
-                try:
-                    response["body"].close()
-                except:
-                    # May not need to be closed
-                    pass
-                f.close()
-                chunk_files.append(tmp_chunk_path)
+                with os.fdopen(tmp_chunk_fd, "wb") as tmp_chunk_f:
+                    tmp_chunk_f.write(response["body"].read())
+                    chunk_files.append(tmp_chunk_path)
             else:
                 self.logger.error(
                     "Getting job output for job {0} returned non-successful HTTP code: {1}".format(job_entry["_id"],
@@ -110,7 +104,15 @@ class RetrievalManager():
 
             # We should delete the retrieval job, now that we have the data
                 mongoops.delete_retrieval_entry(self.db, job_entry["_id"])
+
             # Now that we have all of the files, join them together
-                #TODO: add file joining and de-archive mechanism
+                download_location = job_entry["job_retrieval_destination"]
+
+                with open(download_location, "wb") as f_dest:
+                    for chunk_path in chunk_files:
+                        f_dest.write(open(chunk_path, 'rb').read())
+                        f_dest.flush()
+
+                # TODO: Add de-archive mechanism
 
         os.rmdir(tmp_dir)
