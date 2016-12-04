@@ -91,7 +91,7 @@ def archive_directory(top_dir, subdir, tmpdir):
                 return None
 
 
-def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id, dummy=False):
+def upload_archive(archive_path, subdir_rel, aws_vault, archive_treehash, aws_account_id, dummy=False):
     logger.info("Uploading {0} to vault {1}".format(archive_path, aws_vault))
 
     if not dummy:
@@ -99,7 +99,7 @@ def upload_archive(archive_path, aws_vault, archive_treehash, aws_account_id, du
             with open(archive_path, 'rb') as body:
                 aws_params = boto_client.upload_archive(vaultName=aws_vault,
                                                         accountId=aws_account_id,
-                                                        archiveDescription=archive_path,
+                                                        archiveDescription=subdir_rel,
                                                         body=body)
 
                 # Returned fields from upload:
@@ -402,7 +402,8 @@ if __name__ == "__main__":
             # If the hashes are the same - don't upload the archive; it already exists
             if not compare_files(size_arch, archive_hash, size_remote, hash_remote):
                 # Otherwise, upload the archive
-                upload_status = upload_archive(tmp_archive_fullpath, aws_vault_name, archive_hash, args.account_id,
+                upload_status = upload_archive(tmp_archive_fullpath, backup_subdir_rel_filename, aws_vault_name,
+                                               archive_hash, args.account_id,
                                                args.dummy_upload)
                 if upload_status:
                     # Get vault arn:
