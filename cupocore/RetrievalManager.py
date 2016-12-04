@@ -1,9 +1,10 @@
 import logging
 import os
 import threading
-from math import ceil
-import mongoops
 import tempfile
+import mongoops
+import botocore.utils
+import subprocess
 
 
 class RetrievalManager():
@@ -55,22 +56,29 @@ class RetrievalManager():
     def thread_worker(self):
         while self.check_for_jobs.isSet():
             self.logger.info("Getting new job to check")
-            entry = mongoops.get_oldest_retrieval_entry(self.db, self.vault_name)
+            job_entry = mongoops.get_oldest_retrieval_entry(self.db, self.vault_name)
 
-            if not entry:
+            if not job_entry:
                 self.logger.info("No jobs available! Stopping trying to retrieve")
                 self.check_for_jobs.clear()
+                return
 
-            else:
+            # TODO: If job was last checked less than an hour ago, wait for the rest of the hour
 
-                self.logger.info("Checking if job {0} is ready".format(entry["_id"]))
+            self.logger.info("Checking if job {0} is ready".format(job_entry["_id"]))
 
-                status = self.check_job_status(entry["_id"])
-                if not status:
-                    logging.info("Job {0} is not ready. Waiting 1 minute".format(entry["_id"]))
-                else:
-                    logging.info("Job {0} is ready - commencing download".format(entry["_id"]))
-                    self.download_archive(entry)
+            status = self.check_job_status(job_entry["_id"])
+            if not status:
+                logging.info("Job {0} is not ready.".format(job_entry["_id"]))
+                mongoops.update_job_last_polled_time(self.db, job_entry["_id"])
+                continue
+
+            logging.info("Job {0} is ready - commencing download".format(job_entry["_id"]))
+
+            local_arch_fullpath = self.download_archive(job_entry)
+            if local_arch_fullpath:
+                self.dearchive_file(local_arch_fullpath)
+            os.remove(local_arch_fullpath)
 
     def download_archive(self, job_entry):
         archive_entry = mongoops.get_archive_by_id(self.db, job_entry["archive_id"])
@@ -94,25 +102,77 @@ class RetrievalManager():
 
             if response["status"] == 200 or response["status"] == 206:
                 tmp_chunk_fd, tmp_chunk_path = tempfile.mkstemp(dir=tmp_dir)
-                with os.fdopen(tmp_chunk_fd, "wb") as tmp_chunk_f:
-                    tmp_chunk_f.write(response["body"].read())
+                with os.fdopen(tmp_chunk_fd, "wb") as f_tmp_chunk:
+                    f_tmp_chunk.write(response["body"].read())
                     chunk_files.append(tmp_chunk_path)
             else:
                 self.logger.error(
                     "Getting job output for job {0} returned non-successful HTTP code: {1}".format(job_entry["_id"],
                                                                                                    response["status"]))
+                # TODO: Cleanup temp files, reschedule get_job_output
+                continue
 
-            # We should delete the retrieval job, now that we have the data
-                mongoops.delete_retrieval_entry(self.db, job_entry["_id"])
+        # We should delete the retrieval job, now that we have the data
+        mongoops.delete_retrieval_entry(self.db, job_entry["_id"])
 
-            # Now that we have all of the files, join them together
-                download_location = job_entry["job_retrieval_destination"]
+        # Now that we have all of the files, join them together
+        download_dir = job_entry["job_retrieval_destination"]
+        download_relpath = archive_entry["archive_dir_path"]
+        download_fullpath = os.path.join(download_dir, download_relpath)
 
-                with open(download_location, "wb") as f_dest:
-                    for chunk_path in chunk_files:
-                        f_dest.write(open(chunk_path, 'rb').read())
-                        f_dest.flush()
+        try:
+            os.makedirs(os.path.splitext(download_fullpath)[0])
+        except os.error:
+            # Directory structure already exists
+            pass
 
-                # TODO: Add de-archive mechanism
+        with open(download_fullpath, "ab") as f_dest:
+            for tmp_chunk_path in chunk_files:
+                f_dest.write(open(tmp_chunk_path, 'rb').read())
+                f_dest.flush()
+                os.remove(tmp_chunk_path)
 
         os.rmdir(tmp_dir)
+
+        # Make sure that local treehash matches original upload treehash
+        with open(download_fullpath, "rb"):
+            local_hash = botocore.utils.calculate_tree_hash(download_fullpath)
+            if archive_entry["treehash"] == local_hash:
+                return download_fullpath
+
+        return False
+        # TODO: Reschedule job?
+
+    def dearchive_file(self, archive_path):
+        """
+        Unzips contents of named archive to directory at 'archive_path/archive_name'
+        :param archive_path: Absolute path to archive to unzip
+        """
+
+        try:
+            subprocess.check_call(["7z", "x", archive_path, "-o{0}".format(os.path.splitext(archive_path[0]))])
+            return True
+        except subprocess.CalledProcessError, e:
+            ret_code = e.returncode
+            if ret_code == 1:
+                # Warning (Non fatal error(s)). For example, one or more files were locked by some
+                # other application, so they were not compressed.
+                self.logger.info("7-Zip: Non-fatal error (return code 1)")
+                return None
+            elif ret_code == 2:
+                # Fatal error
+                self.logger.info("7-Zip: Fatal error (return code 2)")
+                return None
+            elif ret_code == 7:
+                # Command-line error
+                self.logger.info("7-Zip: Command-line error (return code 7)\n%s"
+                                 % e.cmd)
+                return None
+            elif ret_code == 8:
+                # Not enough memory for operation
+                self.logger.info("7-Zip: Not enough memory for operation (return code 8)")
+                return None
+            elif ret_code == 255:
+                # User stopped the process
+                self.logger.info("7-Zip: User stopped the process (return code 255)")
+                return None
