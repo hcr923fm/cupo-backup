@@ -54,8 +54,11 @@ class RetrievalManager():
             return True
 
     def thread_worker(self):
+        # Check whether or not we should be checking for jobs
         while self.check_for_jobs.isSet():
             self.logger.info("Getting new job to check")
+
+            # Start with the first entry
             job_entry = mongoops.get_oldest_retrieval_entry(self.db, self.vault_name)
 
             if not job_entry:
@@ -67,17 +70,23 @@ class RetrievalManager():
 
             self.logger.info("Checking if job {0} is ready".format(job_entry["_id"]))
 
+            # Is the data available to retrieve from AWS?
             status = self.check_job_status(job_entry["_id"])
             if not status:
-                logging.info("Job {0} is not ready.".format(job_entry["_id"]))
+                self.logger.info("Job {0} is not ready.".format(job_entry["_id"]))
                 mongoops.update_job_last_polled_time(self.db, job_entry["_id"])
                 continue
 
-            logging.info("Job {0} is ready - commencing download".format(job_entry["_id"]))
+            self.logger.info("Job {0} is ready - commencing download".format(job_entry["_id"]))
 
+            # Download the archive from AWS
             local_arch_fullpath = self.download_archive(job_entry)
             if local_arch_fullpath:
+                # And unzip it
                 self.dearchive_file(local_arch_fullpath)
+
+            # Delete the 7z file
+            self.logger.info("Removing archive {0}".format(local_arch_fullpath))
             os.remove(local_arch_fullpath)
 
     def download_archive(self, job_entry):
@@ -105,6 +114,8 @@ class RetrievalManager():
                 with os.fdopen(tmp_chunk_fd, "wb") as f_tmp_chunk:
                     f_tmp_chunk.write(response["body"].read())
                     chunk_files.append(tmp_chunk_path)
+                    self.logger.info("Written bytes {0} to {1} to {2}".format(byte_first, byte_last, tmp_chunk_path))
+                    last_byte_downloaded = byte_last
             else:
                 self.logger.error(
                     "Getting job output for job {0} returned non-successful HTTP code: {1}".format(job_entry["_id"],
@@ -126,12 +137,15 @@ class RetrievalManager():
             # Directory structure already exists
             pass
 
+        # Join the chunks together
+        self.logger.info("Concatenating chunks to into archive at {0}".format(download_fullpath))
         with open(download_fullpath, "ab") as f_dest:
             for tmp_chunk_path in chunk_files:
                 f_dest.write(open(tmp_chunk_path, 'rb').read())
                 f_dest.flush()
                 os.remove(tmp_chunk_path)
 
+        self.logger.info("Removing temp dir at{0}".format(tmp_dir))
         os.rmdir(tmp_dir)
 
         # Make sure that local treehash matches original upload treehash
@@ -139,6 +153,8 @@ class RetrievalManager():
             local_hash = botocore.utils.calculate_tree_hash(download_fullpath)
             if archive_entry["treehash"] == local_hash:
                 return download_fullpath
+            else:
+                logging.error("Downloaded archive treehash does not match original treehash!")
 
         return False
         # TODO: Reschedule job?
