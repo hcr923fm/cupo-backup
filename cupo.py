@@ -251,6 +251,7 @@ def init_logging():
     # and a STDERR log at the specified level.
 
     logger = logging.getLogger("cupobackup{0}".format(os.getpid()))
+    logger.setLevel(logging.DEBUG)
 
     log_rotating = logging.handlers.RotatingFileHandler(filename=os.path.join(args.logging_dir, '.cupoLog'),
                                                         maxBytes=10485760,  # 10MB
@@ -264,7 +265,7 @@ def init_logging():
     log_rotating.setLevel(logging.INFO)
 
     if args.debug:
-        log_stream.setLevel(logging.INFO)
+        log_stream.setLevel(logging.DEBUG)
     else:
         log_stream.setLevel(logging.INFO)
 
