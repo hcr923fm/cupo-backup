@@ -118,6 +118,21 @@ def delete_retrieval_entry(db, entry_id):
     return db["jobs"].delete_one({"_id": entry_id})
 
 
+def update_job_last_polled_time(db, job_id, time=None):
+    """
+    Set the 'job_last_polled_time' in the job entry.
+    :param db: MongoDB database object to work with
+    :param job_id: ID of the job to update
+    :param time: Optional; the Unix timestamp to set as the job last polled time. If None, then time.time().
+    """
+
+    db["jobs"].find_one_and_update({"_id": job_id},
+                                   {"$set":
+                                        {"job_last_polled_time": time.now()}
+                                    })
+    return True
+
+
 def get_oldest_retrieval_entry(db, vault_name):
     vault = get_vault_by_name(db, vault_name)
     return db["archives"].find_one(
