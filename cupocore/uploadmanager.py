@@ -2,6 +2,7 @@ import logging
 import mongoops
 import threading
 import os, os.path
+import time
 
 
 class UploadManager():
@@ -27,7 +28,7 @@ class UploadManager():
             self.logger.debug("Error msg:\n{0}n\Error args:\n".format(e.message, e.args))
             return False
 
-        for i in xrange(0, archive_size+1, self.chunk_size-1):
+        for i in xrange(0, archive_size+1, self.chunk_size):
             if i + self.chunk_size >= archive_size - 1:
                 last_byte = archive_size - 1
             else:
@@ -43,6 +44,7 @@ class UploadManager():
                                          "subdir_rel_path": subdir_rel_path})
             self.upload_threads.append(t)
             t.start()
+            time.sleep(2)
 
     def thread_worker(self, *args, **kwargs):
         mpart_entry = mongoops.get_oldest_inactive_mpart_entry(self.db, self.vault_name)
