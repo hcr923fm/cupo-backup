@@ -35,6 +35,8 @@ class RetrievalManager():
                                             init_job_ret["location"],
                                             download_location)
 
+        if not self.check_for_jobs.isSet(): self.check_for_jobs.set()
+        self.retrieval_thread.start()
         return True
 
     def check_job_status(self, job_id):
@@ -83,8 +85,8 @@ class RetrievalManager():
 
         while last_byte_downloaded < archive_entry["size"]:
             byte_first = last_byte_downloaded + 1
-            if (128 * 1000000 + last_byte_downloaded) >= archive_entry["size"]:
-                byte_last = archive_entry["size"]
+            if (128 * 1000000 + last_byte_downloaded) >= archive_entry["size"] - 1:
+                byte_last = archive_entry["size"] - 1
             else:
                 byte_last = 128 * 1000000 + last_byte_downloaded
 
@@ -108,9 +110,9 @@ class RetrievalManager():
                     "Getting job output for job {0} returned non-successful HTTP code: {1}".format(job_entry["_id"],
                                                                                                    response["status"]))
 
-            # We should delete the retrieval job, now that we have the data
+                # We should delete the retrieval job, now that we have the data
                 mongoops.delete_retrieval_entry(self.db, job_entry["_id"])
-            # Now that we have all of the files, join them together
-                #TODO: add file joining and de-archive mechanism
+                # Now that we have all of the files, join them together
+                # TODO: add file joining and de-archive mechanism
 
         os.rmdir(tmp_dir)

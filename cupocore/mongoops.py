@@ -52,6 +52,7 @@ def create_backup_database(database_name, db_client, drop_existing=True):
         db.create_collection('archives')
         db.create_collection('vaults')
         db.create_collection('jobs')
+        db.create_collection('mparts')
 
         return db
 
@@ -99,6 +100,37 @@ def create_archive_entry(db, archived_dir_path, vault_arn, aws_archive_id,
 
     # Add the entry.
     return db['archives'].insert(doc_arch)
+
+
+def create_mpart_part_entry(db, vault_arn, uploadId, first_byte, last_byte, tmp_archive_location):
+    doc_mpart = {}
+    doc_mpart["uploadId"] = uploadId
+    doc_mpart["is_active"] = False
+    doc_mpart["first_byte"] = first_byte
+    doc_mpart["last_byte"] = last_byte
+    doc_mpart["tmp_archive_location"] = tmp_archive_location
+
+    return db["mparts"].insert(doc_mpart)
+
+
+def get_oldest_inactive_mpart_entry(db, vault_name):
+    vault = get_vault_by_name(db, vault_name)
+    return db["mparts"].find_one(
+        {"is_active": False},
+        sort=[('first_byte', pymongo.ASCENDING)])
+
+def delete_mpart_entry(db, mpart_id):
+    return db["mparts"].delete_one({"_id": mpart_id})
+
+
+def is_existing_mparts_remaining(db, vault_name, uploadId):
+    vault = get_vault_by_name(db, vault_name)
+    p = db["mparts"].find_one(
+        {"uploadId": uploadId})
+    if not p:
+        return False
+    else:
+        return True
 
 
 def create_retrieval_entry(db, vault_arn, archive_id, aws_job_id, aws_job_location, download_path):
