@@ -126,8 +126,9 @@ def upload_archive(archive_path, subdir_rel, aws_vault, archive_treehash, aws_ac
             logger.error("Upload failed - {0}".format(e.message))
             return None
 
-        except:
-            logger.error("Upload failed - unknown error!")
+        except Exception, e:
+            logger.error(
+                "Upload failed - unknown error!\nError message:\n{0}\nError args:\n{1}".format(e.message, e.args))
             return None
 
     else:
