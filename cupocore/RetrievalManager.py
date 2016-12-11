@@ -78,17 +78,18 @@ class RetrievalManager():
         archive_entry = mongoops.get_archive_by_id(self.db, job_entry["archive_id"])
         tmp_dir = tempfile.mkdtemp()
 
-        # Break the job up into 128MB chunks to make life easier
+        # Break the job up into chunks to make life easier
         chunk_files = []
+        chunk_size = 2**16
 
         last_byte_downloaded = -1
 
         while last_byte_downloaded < archive_entry["size"]:
             byte_first = last_byte_downloaded + 1
-            if (128 * (10**6) + last_byte_downloaded) >= archive_entry["size"] - 1:
+            if (chunk_size + last_byte_downloaded) >= archive_entry["size"] - 1:
                 byte_last = archive_entry["size"] - 1
             else:
-                byte_last = 128 * 1000000 + last_byte_downloaded
+                byte_last = chunk_size + last_byte_downloaded
 
             response = self.client.get_job_output(vaultName=self.vault_name,
                                                   jobId=job_entry["_id"],

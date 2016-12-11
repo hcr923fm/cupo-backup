@@ -7,7 +7,7 @@ from os import getpid
 class UploadManager():
     def __init__(self, db, client, vault_name):
         self._concurrent_upload_limit = 3
-        self.chunk_size = 16 * (10**6) # Multipart size in bytes
+        self.chunk_size = 2**16 # Multipart size in bytes
         self.db = db
         self.client = client
         self.vault_name = vault_name
