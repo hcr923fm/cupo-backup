@@ -27,7 +27,7 @@ class UploadManager():
             self.logger.debug("Error msg:\n{0}n\Error args:\n".format(e.message, e.args))
             return False
 
-        for i in xrange(0, archive_size, self.chunk_size):
+        for i in xrange(0, archive_size+1, self.chunk_size-1):
             if i + self.chunk_size >= archive_size - 1:
                 last_byte = archive_size - 1
             else:
@@ -58,7 +58,7 @@ class UploadManager():
                                                                         mpart_entry["first_byte"],
                                                                         mpart_entry["last_byte"]),
                                                                     body=mpart_f.read(
-                                                                        mpart_entry["last_byte"]-1 - mpart_entry[
+                                                                        mpart_entry["last_byte"] - mpart_entry[
                                                                             "first_byte"]))
                 if upload_response:
                     mongoops.delete_mpart_entry(self.db, mpart_entry["_id"])
