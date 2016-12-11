@@ -19,7 +19,7 @@ class UploadManager():
     def initialize_upload(self, tmp_archive_location, subdir_rel_path, archive_checksum, archive_size):
         try:
             response = self.client.initiate_multipart_upload(vaultName=self.vault_name,
-                                                             description=subdir_rel_path,
+                                                             archiveDgescription=subdir_rel_path,
                                                              partSize=str(self.chunk_size))
 
         except Exception, e:
@@ -64,6 +64,7 @@ class UploadManager():
         except Exception, e:
             self.logger.error("Failed to upload mpart!")
             self.logger.debug("Error msg:\n{0}\nError args:\n{1}".format(e.message, e.args))
+            return False
 
         # At end, check if there are any more parts with this uploadId - if not, complete the mpart upload
         is_more = mongoops.is_existing_mparts_remaining(self.db, self.vault_name, mpart_entry["uploadId"])
@@ -80,4 +81,5 @@ class UploadManager():
             except Exception, e:
                 self.logger.error("Failed to complete mpart upload!")
                 self.logger.debug("Error msg:\n{0}\nError args:\n{1}".format(e.message, e.args))
+                return False
 
