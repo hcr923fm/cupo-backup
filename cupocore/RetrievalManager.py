@@ -80,7 +80,7 @@ class RetrievalManager():
 
         # Break the job up into chunks to make life easier
         chunk_files = []
-        chunk_size = 2**16
+        chunk_size = 16777216
 
         last_byte_downloaded = -1
 
