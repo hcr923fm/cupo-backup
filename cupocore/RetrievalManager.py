@@ -85,7 +85,7 @@ class RetrievalManager():
 
         while last_byte_downloaded < archive_entry["size"]:
             byte_first = last_byte_downloaded + 1
-            if (128 * 1000000 + last_byte_downloaded) >= archive_entry["size"] - 1:
+            if (128 * (10**6) + last_byte_downloaded) >= archive_entry["size"] - 1:
                 byte_last = archive_entry["size"] - 1
             else:
                 byte_last = 128 * 1000000 + last_byte_downloaded
