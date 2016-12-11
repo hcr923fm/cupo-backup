@@ -38,9 +38,9 @@ class UploadManager():
 
         while len(self.upload_threads) < self._concurrent_upload_limit:
             t = threading.Thread(target=self.thread_worker,
-                                 kwargs={archive_size: archive_size,
-                                         archive_checksum: archive_checksum,
-                                         subdir_rel_path: subdir_rel_path})
+                                 kwargs={"archive_size": archive_size,
+                                         "archive_checksum": archive_checksum,
+                                         "subdir_rel_path": subdir_rel_path})
             self.upload_threads.append(t)
             t.start()
 
