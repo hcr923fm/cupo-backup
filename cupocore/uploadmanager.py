@@ -19,7 +19,7 @@ class UploadManager():
     def initialize_upload(self, tmp_archive_location, subdir_rel_path, archive_checksum, archive_size):
         try:
             response = self.client.initiate_multipart_upload(vaultName=self.vault_name,
-                                                             archiveDgescription=subdir_rel_path,
+                                                             archiveDescription=subdir_rel_path,
                                                              partSize=str(self.chunk_size))
 
         except Exception, e:
