@@ -58,7 +58,7 @@ class UploadManager():
                                                                         mpart_entry["first_byte"],
                                                                         mpart_entry["last_byte"]),
                                                                     body=mpart_f.read(
-                                                                        mpart_entry["last_byte"] - mpart_entry[
+                                                                        mpart_entry["last_byte"]-1 - mpart_entry[
                                                                             "first_byte"]))
                 if upload_response:
                     mongoops.delete_mpart_entry(self.db, mpart_entry["_id"])
