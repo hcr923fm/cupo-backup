@@ -46,6 +46,7 @@ class UploadManager():
 
     def thread_worker(self, *args, **kwargs):
         mpart_entry = mongoops.get_oldest_inactive_mpart_entry(self.db, self.vault_name)
+        mongoops.set_mpart_active(self.db, mpart_entry["_id"])
 
         try:
             self.logger.debug("File at {0} exists: {1}".format(mpart_entry["tmp_archive_location"],
