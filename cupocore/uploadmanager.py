@@ -47,47 +47,49 @@ class UploadManager():
             time.sleep(2)
 
     def thread_worker(self, *args, **kwargs):
-        mpart_entry = mongoops.get_oldest_inactive_mpart_entry(self.db, self.vault_name)
-        mongoops.set_mpart_active(self.db, mpart_entry["_id"])
+        while True:
+            mpart_entry = mongoops.get_oldest_inactive_mpart_entry(self.db, self.vault_name)
+            if not mpart_entry: return None
+            mongoops.set_mpart_active(self.db, mpart_entry["_id"])
 
-        try:
-            self.logger.debug("File at {0} exists: {1}".format(mpart_entry["tmp_archive_location"],
-                                                               os.path.exists(mpart_entry["tmp_archive_location"])))
-            with open(mpart_entry["tmp_archive_location"], "rb") as mpart_f:
-                mpart_f.seek(mpart_entry["first_byte"], 0)
-                upload_response = self.client.upload_multipart_part(vaultName=self.vault_name,
-                                                                    uploadId=mpart_entry["uploadId"],
-                                                                    range="bytes {0}-{1}/*".format(
-                                                                        mpart_entry["first_byte"],
-                                                                        mpart_entry["last_byte"]),
-                                                                    body=mpart_f.read(self.chunk_size))
-                if upload_response:
-                    mongoops.delete_mpart_entry(self.db, mpart_entry["_id"])
-                    self.logger.info("Uploaded bytes {0} to {1} of {2}".format(mpart_entry["first_byte"],
-                                                                               mpart_entry["last_byte"]-1,
-                                                                               mpart_entry["tmp_archive_location"]))
-
-        except Exception, e:
-            self.logger.error("Failed to upload mpart!")
-            self.logger.debug("Error msg:\n{0}\nError args:\n{1}".format(e.message, e.args))
-            return False
-
-        # At end, check if there are any more parts with this uploadId - if not, complete the mpart upload
-        is_more = mongoops.is_existing_mparts_remaining(self.db, self.vault_name, mpart_entry["uploadId"])
-        if not is_more:
             try:
-                final_response = self.client.complete_multipart_upload(vaultName=self.vault_name,
-                                                  uploadId=mpart_entry["uploadId"],
-                                                  archiveSize=kwargs["archive_size"],
-                                                  checksum=kwargs["archive_checksum"])
-                mongoops.create_archive_entry(self.db, kwargs["subdir_rel_path"],
-                                              mongoops.get_vault_by_name(self.db, self.vault_name)["arn"],
-                                              final_response["archiveId"], final_response["checksum"],
-                                              kwargs["archive_size"], final_response["location"])
-                os.remove(mpart_entry["tmp_archive_location"])
-                self.logger.info("Completed upload of {0}".format(mpart_entry["tmp_archive_location"]))
+                self.logger.debug("File at {0} exists: {1}".format(mpart_entry["tmp_archive_location"],
+                                                                   os.path.exists(mpart_entry["tmp_archive_location"])))
+                with open(mpart_entry["tmp_archive_location"], "rb") as mpart_f:
+                    mpart_f.seek(mpart_entry["first_byte"], 0)
+                    upload_response = self.client.upload_multipart_part(vaultName=self.vault_name,
+                                                                        uploadId=mpart_entry["uploadId"],
+                                                                        range="bytes {0}-{1}/*".format(
+                                                                            mpart_entry["first_byte"],
+                                                                            mpart_entry["last_byte"]),
+                                                                        body=mpart_f.read(self.chunk_size))
+                    if upload_response:
+                        mongoops.delete_mpart_entry(self.db, mpart_entry["_id"])
+                        self.logger.info("Uploaded bytes {0} to {1} of {2}".format(mpart_entry["first_byte"],
+                                                                                   mpart_entry["last_byte"],
+                                                                                   mpart_entry["tmp_archive_location"]))
+
             except Exception, e:
-                self.logger.error("Failed to complete mpart upload!")
+                self.logger.error("Failed to upload mpart!")
                 self.logger.debug("Error msg:\n{0}\nError args:\n{1}".format(e.message, e.args))
                 return False
+
+            # At end, check if there are any more parts with this uploadId - if not, complete the mpart upload
+            is_more = mongoops.is_existing_mparts_remaining(self.db, self.vault_name, mpart_entry["uploadId"])
+            if not is_more:
+                try:
+                    final_response = self.client.complete_multipart_upload(vaultName=self.vault_name,
+                                                      uploadId=mpart_entry["uploadId"],
+                                                      archiveSize=kwargs["archive_size"],
+                                                      checksum=kwargs["archive_checksum"])
+                    mongoops.create_archive_entry(self.db, kwargs["subdir_rel_path"],
+                                                  mongoops.get_vault_by_name(self.db, self.vault_name)["arn"],
+                                                  final_response["archiveId"], final_response["checksum"],
+                                                  kwargs["archive_size"], final_response["location"])
+                    os.remove(mpart_entry["tmp_archive_location"])
+                    self.logger.info("Completed upload of {0}".format(mpart_entry["tmp_archive_location"]))
+                except Exception, e:
+                    self.logger.error("Failed to complete mpart upload!")
+                    self.logger.debug("Error msg:\n{0}\nError args:\n{1}".format(e.message, e.args))
+                    return False
 
