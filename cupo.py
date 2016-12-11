@@ -91,65 +91,15 @@ def archive_directory(top_dir, subdir, tmpdir):
                 return None
 
 
-def upload_archive(archive_path, subdir_rel, aws_vault, archive_treehash, aws_account_id, dummy=False):
+def upload_archive(upload_mgr, archive_path, subdir_rel, aws_vault, archive_treehash, archive_size, dummy=False):
+
     logger.info("Uploading {0} to vault {1}".format(archive_path, aws_vault))
-
     if not dummy:
-        try:
-            with open(archive_path, 'rb') as body:
-                aws_params = boto_client.upload_archive(vaultName=aws_vault,
-                                                        accountId=aws_account_id,
-                                                        archiveDescription=subdir_rel,
-                                                        body=body)
-
-                # Returned fields from upload:
-                # location -> (string)
-                # The relative URI path of the newly added archive resource.
-                # checksum -> (string)
-                # The checksum of the archive computed by Amazon Glacier.
-                # archiveId -> (string)
-                # The ID of the archive. This value is also included as part of the location.
-
-        except botocore.exceptions.ChecksumError:
-            logger.error("Upload failed - AWS checksum does not match local checksum")
-            return None
-
-        except botocore.exceptions.ConnectionClosedError:
-            logger.error("Upload failed - connection to AWS server was unexpectedly closed")
-            return None
-
-        except botocore.exceptions.EndpointConnectionError:
-            logger.error("Upload failed - unable to connect to AWS server")
-            return None
-
-        except botocore.exceptions.BotoCoreError, e:
-            logger.error("Upload failed - {0}".format(e.message))
-            return None
-
-        except Exception, e:
-            logger.error(
-                "Upload failed - unknown error!\nError message:\n{0}\nError args:\n{1}".format(e.message, e.args))
-            return None
-
+        upload_mgr.initialize_upload(archive_path, subdir_rel, archive_treehash, archive_size)
     else:
         # This is a dummy upload, for testing purposes. Create a fake
         # AWS URI and location, but don't touch the archive.
         logger.info("Dummy upload - not actually uploading archive!")
-
-        arch_id = "{0}-hcrbackup-{1}".format(aws_vault, time.time())
-
-        aws_params = {"archiveId": arch_id,
-                      "location": "aws://dummy-uri-{0}".format(arch_id),
-                      "checksum": archive_treehash
-                      }
-
-    logger.info("Uploaded archive {archpath} \n \
-                  Returned fields: \n \
-                  \tlocation: {params[location]} \n \
-                  \tchecksum: {params[checksum]} \n \
-                  \tarchiveId: {params[archiveId]}".format(archpath=archive_path,
-                                                           params=aws_params))
-    return aws_params
 
 
 def delete_aws_archive(archive_id, aws_vault):
@@ -382,6 +332,8 @@ if __name__ == "__main__":
         subdirs_to_backup.append(
             "")  # TODO-archiveroot: #4 Dammit I will get this working - get the root directory contents to be zipped
 
+        upload_mgr = cupocore.uploadmanager.UploadManager(db, boto_client, aws_vault_name)
+
         for subdir_to_backup in subdirs_to_backup:
 
             # Archive each folder in the list to it's own ZIP file
@@ -417,23 +369,9 @@ if __name__ == "__main__":
             # If the hashes are the same - don't upload the archive; it already exists
             if not compare_files(size_arch, archive_hash, size_remote, hash_remote):
                 # Otherwise, upload the archive
-                upload_status = upload_archive(tmp_archive_fullpath, backup_subdir_rel_filename, aws_vault_name,
-                                               archive_hash, args.account_id,
+                upload_archive(upload_mgr, tmp_archive_fullpath, backup_subdir_rel_filename, aws_vault_name,
+                                               archive_hash, size_arch,
                                                args.dummy_upload)
-                if upload_status:
-                    # Get vault arn:
-                    aws_vault_arn = cupocore.mongoops.get_vault_by_name(db, aws_vault_name)["arn"]
-
-                    # Store the info about the newly uploaded file in the database
-                    cupocore.mongoops.create_archive_entry(db,
-                                                           backup_subdir_rel_filename,
-                                                           aws_vault_arn,
-                                                           upload_status["archiveId"],
-                                                           archive_hash,
-                                                           size_arch,
-                                                           upload_status["location"])
-                else:
-                    logger.info("Failed to upload {0}".format(backup_subdir_rel_filename))
             else:
                 logger.info("Skipped uploading {0} - archive has not changed".format(
                     backup_subdir_rel_filename))
