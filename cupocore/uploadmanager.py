@@ -32,7 +32,7 @@ class UploadManager():
             if i + self.chunk_size >= archive_size - 1:
                 last_byte = archive_size - 1
             else:
-                last_byte = i + self.chunk_size
+                last_byte = i + self.chunk_size-1
 
             mongoops.create_mpart_part_entry(self.db, mongoops.get_vault_by_name(self.db, self.vault_name)["arn"],
                                              response["uploadId"], i, last_byte, tmp_archive_location)
@@ -59,10 +59,8 @@ class UploadManager():
                                                                     uploadId=mpart_entry["uploadId"],
                                                                     range="bytes {0}-{1}/*".format(
                                                                         mpart_entry["first_byte"],
-                                                                        mpart_entry["last_byte"]-1),
-                                                                    body=mpart_f.read(
-                                                                        mpart_entry["last_byte"] - mpart_entry[
-                                                                            "first_byte"]))
+                                                                        mpart_entry["last_byte"]),
+                                                                    body=mpart_f.read(self.chunk_size))
                 if upload_response:
                     mongoops.delete_mpart_entry(self.db, mpart_entry["_id"])
                     self.logger.info("Uploaded bytes {0} to {1} of {2}".format(mpart_entry["first_byte"],
@@ -87,6 +85,7 @@ class UploadManager():
                                               final_response["archiveId"], final_response["checksum"],
                                               kwargs["archive_size"], final_response["location"])
                 os.remove(mpart_entry["tmp_archive_location"])
+                self.logger.info("Completed upload of {0}".format(mpart_entry["tmp_archive_location"]))
             except Exception, e:
                 self.logger.error("Failed to complete mpart upload!")
                 self.logger.debug("Error msg:\n{0}\nError args:\n{1}".format(e.message, e.args))
