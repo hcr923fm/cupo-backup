@@ -93,7 +93,7 @@ class RetrievalManager():
 
             response = self.client.get_job_output(vaultName=self.vault_name,
                                                   jobId=job_entry["_id"],
-                                                  range="bytes {0}-{1}".format(byte_first, byte_last))
+                                                  range="bytes {0}-{1}/*".format(byte_first, byte_last))
 
             if response["status"] == 200 or response["status"] == 206:
                 tmp_chunk_fd, tmp_chunk_path = tempfile.mkstemp(dir=tmp_dir)
