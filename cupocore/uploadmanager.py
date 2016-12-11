@@ -54,7 +54,7 @@ class UploadManager():
                 mpart_f.seek(mpart_entry["first_byte"], 0)
                 upload_response = self.client.upload_multipart_part(vaultName=self.vault_name,
                                                                     uploadId=mpart_entry["uploadId"],
-                                                                    range="{0}-{1}".format(
+                                                                    range="bytes {0}-{1}/*".format(
                                                                         mpart_entry["first_byte"],
                                                                         mpart_entry["last_byte"]),
                                                                     body=mpart_f.read(
