@@ -56,7 +56,7 @@ class UploadManager():
                                                                     uploadId=mpart_entry["uploadId"],
                                                                     range="bytes {0}-{1}/*".format(
                                                                         mpart_entry["first_byte"],
-                                                                        mpart_entry["last_byte"]),
+                                                                        mpart_entry["last_byte"]-1),
                                                                     body=mpart_f.read(
                                                                         mpart_entry["last_byte"] - mpart_entry[
                                                                             "first_byte"]))
