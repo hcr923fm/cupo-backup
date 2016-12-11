@@ -376,9 +376,9 @@ if __name__ == "__main__":
                 logger.info("Skipped uploading {0} - archive has not changed".format(
                     backup_subdir_rel_filename))
 
-            # Delete the temporary archive
-            logger.info("Removing temporary archive")
-            os.remove(tmp_archive_fullpath)
+                # Delete the temporary archive
+                logger.info("Removing temporary archive")
+                os.remove(tmp_archive_fullpath)
 
             # Find archives older than three months, with three more recent versions
             # available
