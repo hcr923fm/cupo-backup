@@ -1,7 +1,7 @@
 import logging
 import mongoops
 import threading
-from os import getpid
+import os, os.path
 
 
 class UploadManager():
@@ -12,7 +12,7 @@ class UploadManager():
         self.client = client
         self.vault_name = vault_name
 
-        self.logger = logging.getLogger("cupobackup{0}.UploadManager".format(getpid()))
+        self.logger = logging.getLogger("cupobackup{0}.UploadManager".format(os.getpid()))
 
         self.upload_threads = []
 
@@ -48,6 +48,8 @@ class UploadManager():
         mpart_entry = mongoops.get_oldest_inactive_mpart_entry(self.db, self.vault_name)
 
         try:
+            self.logger.debug("File at {0} exists: {1}".format(mpart_entry["tmp_archive_location"],
+                                                               os.path.exists(mpart_entry["tmp_archive_location"])))
             with open(mpart_entry["tmp_archive_location"], "rb") as mpart_f:
                 mpart_f.seek(mpart_entry["first_byte"], 0)
                 upload_response = self.client.upload_multipart_part(vaultName=self.vault_name,
