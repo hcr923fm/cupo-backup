@@ -62,6 +62,9 @@ class UploadManager():
                                                                             "first_byte"]))
                 if upload_response:
                     mongoops.delete_mpart_entry(self.db, mpart_entry["_id"])
+                    self.logger.info("Uploaded bytes {0} to {1} of {2}".format(mpart_entry["first_byte"],
+                                                                               mpart_entry["last_byte"]-1,
+                                                                               mpart_entry["tmp_archive_location"]))
 
         except Exception, e:
             self.logger.error("Failed to upload mpart!")
