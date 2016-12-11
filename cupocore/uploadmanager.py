@@ -25,6 +25,7 @@ class UploadManager():
         except Exception, e:
             self.logger.error("Failed to init multipart upload!")
             self.logger.debug("Error msg:\n{0}n\Error args:\n".format(e.message, e.args))
+            return False
 
         for i in xrange(0, archive_size, self.chunk_size):
             if i + self.chunk_size >= archive_size - 1:
