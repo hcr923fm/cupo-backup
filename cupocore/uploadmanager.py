@@ -49,7 +49,9 @@ class UploadManager():
     def thread_worker(self, *args, **kwargs):
         while True:
             mpart_entry = mongoops.get_oldest_inactive_mpart_entry(self.db, self.vault_name)
-            if not mpart_entry: return None
+            if not mpart_entry:
+                self.logger.info("Thread exiting, no more mparts available")
+                return None
             mongoops.set_mpart_active(self.db, mpart_entry["_id"])
 
             try:
