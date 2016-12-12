@@ -119,11 +119,20 @@ def get_oldest_inactive_mpart_entry(db, vault_name):
         {"is_active": False},
         sort=[('first_byte', pymongo.ASCENDING)])
 
+
 def set_mpart_active(db, mpart_id):
     db["mparts"].find_one_and_update({"_id": mpart_id},
-                                       {"$set":
-                                            {"is_active": True}
-                                        })
+                                     {"$set":
+                                          {"is_active": True}
+                                      })
+
+
+def set_mpart_inactive(db, mpart_id):
+    db["mparts"].find_one_and_update({"_id": mpart_id},
+                                     {"$set":
+                                          {"is_active": False}
+                                      })
+
 
 def delete_mpart_entry(db, mpart_id):
     return db["mparts"].delete_one({"_id": mpart_id})
