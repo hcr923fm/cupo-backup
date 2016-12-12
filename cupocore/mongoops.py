@@ -113,6 +113,7 @@ def create_mpart_part_entry(db, vault_arn, uploadId, first_byte, last_byte, tmp_
     return db["mparts"].insert(doc_mpart)
 
 
+# TODO: Make this correct
 def get_oldest_inactive_mpart_entry(db, vault_name):
     vault = get_vault_by_name(db, vault_name)
     return db["mparts"].find_one(

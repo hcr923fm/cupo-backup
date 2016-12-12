@@ -7,7 +7,7 @@ import time
 
 class UploadManager():
     def __init__(self, db, client, vault_name):
-        self._concurrent_upload_limit = 3
+        self._concurrent_upload_limit = 5
         self.chunk_size = 16777216 # Multipart size in bytes
         self.db = db
         self.client = client
