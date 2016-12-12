@@ -75,7 +75,7 @@ class UploadManager():
                 self.logger.error("Failed to upload mpart!")
                 self.logger.debug("Error msg:\n{0}\nError args:\n{1}".format(e.message, e.args))
                 mongoops.set_mpart_inactive(self.db, mpart_entry["_id"])
-                return False
+                continue
 
             # At end, check if there are any more parts with this uploadId - if not, complete the mpart upload
             is_more = mongoops.is_existing_mparts_remaining(self.db, self.vault_name, mpart_entry["uploadId"])
@@ -94,5 +94,5 @@ class UploadManager():
                 except Exception, e:
                     self.logger.error("Failed to complete mpart upload!")
                     self.logger.debug("Error msg:\n{0}\nError args:\n{1}".format(e.message, e.args))
-                    return False
+                    continue
 
