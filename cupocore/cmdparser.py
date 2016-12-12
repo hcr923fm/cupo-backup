@@ -48,6 +48,10 @@ def __parse_cmd_args(options_namespace):
                                    help='If passed, the archives will not be uploaded, but a dummy AWS URI and archive \
                                    ID will be generated. Use for testing only.',
                                    action='store_true')
+    arg_parser_backup.add_argument("--temp-dir",
+                                   help="If passed, the specified directory will be used to store temporary upload and \
+                                        download chunks. Use when the drive with the default tempdir has little \
+                                        available space")
 
     arg_parser_retrieve = subparsers.add_parser('retrieve',
                                                 help="Retrieve a directory tree from the specified vault and download \
@@ -59,6 +63,10 @@ def __parse_cmd_args(options_namespace):
                                      list of directories available.")
     arg_parser_retrieve.add_argument('--download_location',
                                      help="The local directory to download the file tree to.")
+    arg_parser_retrieve.add_argument("--temp-dir",
+                                     help="If passed, the specified directory will be used to store temporary upload and \
+                                            download chunks. Use when the drive with the default tempdir has little \
+                                            available space")
     arg_parser_retrieve.add_argument('--list',
                                      help="Print a list of the directories available for download.",
                                      action='store_true',

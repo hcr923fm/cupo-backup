@@ -299,6 +299,9 @@ if __name__ == "__main__":
             logger.error("New vault name not supplied. Cannot create vault.")
         exit()
 
+    if args.temp_dir:
+        tempfile.tempdir = args.temp_dir
+
     # If we're retrieving existing backups...
     elif args.subparser_name == "retrieve":
         if args.list_uploaded_archives:
