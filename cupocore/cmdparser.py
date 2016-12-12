@@ -126,7 +126,8 @@ def create_config_file(file_location):
                    "aws_profile": "",
                    "debug": False,
                    "logging_dir": "",
-                   "backup_directory": ""
+                   "backup_directory": "",
+                   "temp_dir":""
                    }
 
     with open(file_location, "w") as f:
