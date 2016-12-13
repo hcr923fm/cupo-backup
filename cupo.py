@@ -3,9 +3,9 @@ import subprocess
 import tempfile
 import botocore.utils, botocore.exceptions
 import boto3
-import time
 import logging, logging.handlers
 import cupocore
+import shutil
 
 __author__ = 'Callum McLean <calmcl1@aol.com>'
 __version__ = '0.1.0'
@@ -49,46 +49,49 @@ def archive_directory(top_dir, subdir, tmpdir):
             # logger.info("Adding to archive list: {0}".format(c))
             files.append(fpath)
 
-    if files:  # No point creating empty archives!
-        archive_file_path = os.path.join(tmpdir, os.path.basename(subdir)) + ".7z"
+    if not files:
+        # No point creating empty archives!
+        return
 
-        logger.info("Archiving %s to %s" % (subdir, archive_file_path))
+    archive_file_path = os.path.join(tmpdir, subdir) + ".7z"
 
-        # with open(os.devnull, "w") as devnull:
+    logger.info("Archiving %s to %s" % (subdir, archive_file_path))
 
-        devnull = open(os.devnull, "wb")
-        try:
-            subprocess.check_call(
-                ["7z", "a", "-t7z", archive_file_path, os.path.join(full_backup_path, "*"),
-                 "-m0=BZip2", "-y", "-aoa", "-xr-!*/", "-xr-!*sync-conflict*",
-                 "-xr-!*desktop.ini", "-xr-!*.tmp", "-xr-!*thumbs.db"], stdout=devnull, stderr=devnull)
-            logger.info("Created archive at %s" % archive_file_path)
-            return archive_file_path
+    # with open(os.devnull, "w") as devnull:
 
-        except subprocess.CalledProcessError, e:
-            ret_code = e.returncode
-            if ret_code == 1:
-                # Warning (Non fatal error(s)). For example, one or more files were locked by some
-                # other application, so they were not compressed.
-                logger.info("7-Zip: Non-fatal error (return code 1)")
-                return None
-            elif ret_code == 2:
-                # Fatal error
-                logger.info("7-Zip: Fatal error (return code 2)")
-                return None
-            elif ret_code == 7:
-                # Command-line error
-                logger.info("7-Zip: Command-line error (return code 7)\n%s"
-                            % e.cmd)
-                return None
-            elif ret_code == 8:
-                # Not enough memory for operation
-                logger.info("7-Zip: Not enough memory for operation (return code 8)")
-                return None
-            elif ret_code == 255:
-                # User stopped the process
-                logger.info("7-Zip: User stopped the process (return code 255)")
-                return None
+    devnull = open(os.devnull, "wb")
+    try:
+        subprocess.check_call(
+            ["7z", "a", "-t7z", archive_file_path, os.path.join(full_backup_path, "*"),
+             "-m0=BZip2", "-y", "-aoa", "-xr-!*/", "-xr-!*sync-conflict*",
+             "-xr-!*desktop.ini", "-xr-!*.tmp", "-xr-!*thumbs.db"], stdout=devnull, stderr=devnull)
+        logger.info("Created archive at %s" % archive_file_path)
+        return archive_file_path
+
+    except subprocess.CalledProcessError, e:
+        ret_code = e.returncode
+        if ret_code == 1:
+            # Warning (Non fatal error(s)). For example, one or more files were locked by some
+            # other application, so they were not compressed.
+            logger.info("7-Zip: Non-fatal error (return code 1)")
+            return None
+        elif ret_code == 2:
+            # Fatal error
+            logger.info("7-Zip: Fatal error (return code 2)")
+            return None
+        elif ret_code == 7:
+            # Command-line error
+            logger.info("7-Zip: Command-line error (return code 7)\n%s"
+                        % e.cmd)
+            return None
+        elif ret_code == 8:
+            # Not enough memory for operation
+            logger.info("7-Zip: Not enough memory for operation (return code 8)")
+            return None
+        elif ret_code == 255:
+            # User stopped the process
+            logger.info("7-Zip: User stopped the process (return code 255)")
+            return None
 
 
 def upload_archive(upload_mgr, archive_path, subdir_rel, aws_vault, archive_treehash, archive_size, dummy=False):
@@ -397,7 +400,7 @@ if __name__ == "__main__":
 
         # Delete the temporary directory.
         logger.info("Removing temporary working folder")
-        os.rmdir(temp_dir)
+        shutil.rmtree(temp_dir)
 
     else:
         logger.info("Skipping file backup - '--no-backup' supplied.")
