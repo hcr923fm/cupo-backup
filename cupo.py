@@ -51,7 +51,7 @@ def archive_directory(top_dir, subdir, tmpdir):
 
     if not files:
         # No point creating empty archives!
-        return
+        return None
 
     archive_file_path = os.path.join(tmpdir, subdir) + ".7z"
 
