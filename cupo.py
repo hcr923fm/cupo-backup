@@ -406,8 +406,8 @@ if __name__ == "__main__":
                 # archive_hash = calculate_tree_hash(arch_f)
                 archive_hash = botocore.utils.calculate_tree_hash(arch_f)
 
-            backup_subdir_abs_filename = os.path.join(root_dir, subdir_to_backup) + ".7z"
-            backup_subdir_rel_filename = subdir_to_backup + ".7z"
+            backup_subdir_abs_filename = os.path.join(root_dir, subdir_to_backup) + ".zip"
+            backup_subdir_rel_filename = subdir_to_backup + ".zip"
 
             # Find most recent version of this file in Glacier
             most_recent_version = cupocore.mongoops.get_most_recent_version_of_archive(db, aws_vault_name,
