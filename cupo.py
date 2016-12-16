@@ -45,7 +45,7 @@ def archive_directory(top_dir, subdir, tmpdir):
 
     # Only add files to 'files' list, not subdirs
     for c in dir_contents:
-        fpath = os.path.join(top_dir, subdir, c)
+        fpath = os.path.join(full_backup_path, c)
         if os.path.isfile(fpath) and not fpath.endswith(".ini"):
             # logger.info("Adding to archive list: {0}".format(c))
             files.append(fpath)
@@ -62,17 +62,13 @@ def archive_directory(top_dir, subdir, tmpdir):
     # with open(os.devnull, "w") as devnull:
 
     devnull = open(os.devnull, "wb")
-    file_list = []
-    for p in os.listdir(full_backup_path):
-        if os.path.isfile(os.path.join(full_backup_path, p)):
-            file_list.append(os.path.join(full_backup_path, p))
 
     try:
         with zipfile.ZipFile(archive_file_path, "w", compression=zipfile.ZIP_DEFLATED, allowZip64=True) as arch_zip:
-            for f in file_list:
+            for f in files:
                 logger.debug("Adding {0} to archive {1}".format(f, archive_file_path))
                 arch_zip.write(f, os.path.basename(f))
-                return archive_file_path
+            return archive_file_path
 
     except Exception, e:
         logging.error("Failed to create archive {0}: {1}".format(archive_file_path, e.message))
