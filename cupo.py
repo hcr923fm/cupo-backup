@@ -1,6 +1,7 @@
 import os, os.path
 import subprocess
 import tempfile
+import zipfile
 import botocore.utils, botocore.exceptions
 import boto3
 import logging, logging.handlers
@@ -60,93 +61,22 @@ def archive_directory(top_dir, subdir, tmpdir):
     # with open(os.devnull, "w") as devnull:
 
     devnull = open(os.devnull, "wb")
+    file_list = []
+    for p in os.listdir(full_backup_path):
+        if os.path.isfile(os.path.join(full_backup_path, p)):
+            file_list.append(os.path.join(full_backup_path, p))
+
     try:
-        # TODO: Migrate from subprocess'ing zip to using zip module?
-        logging.debug("Calling zip -Dj {0} {1}".format(archive_file_path, os.path.join(full_backup_path, "*")))
-        if args.debug:
-            subprocess.check_call(["zip", "-Dj", archive_file_path, os.path.join(full_backup_path, "*")])
-        else:
-            subprocess.check_call(["zip", "-Dj", archive_file_path, os.path.join(full_backup_path, "*")],
-                                  stdout=devnull, stderr=devnull)
-        logger.info("Created archive at %s" % archive_file_path)
-        return archive_file_path
+        with zipfile.ZipFile(archive_file_path, "w", compression=zipfile.ZIP_DEFLATED, allowZip64=True) as arch_zip:
+            for f in file_list:
+                logger.debug("Adding {0} to archive {1}".format(f, archive_file_path))
+                arch_zip.write(f, os.path.basename(f))
+                return archive_file_path
 
-    except subprocess.CalledProcessError, e:
-        ret_code = e.returncode
-
-        if ret_code == 2:
-            logger.info("zip: unexpected EOF (return code {0})".format(ret_code))
-            return None
-        elif ret_code == 3:
-            logger.info(
-                "zip: a generic error in the zipfile format was detected. Processing may have completed successfully \
-                anyway; some broken zipfiles created by other archivers have simple work-arounds.\
-                 (return code {0})".format(ret_code))
-            return None
-        elif ret_code == 4:
-            logger.info(
-                "zip: zip was unable to allocate memory for one or more buffers during program initialization.\
-                 (return code {0})".format(ret_code))
-            return None
-        elif ret_code == 5:
-            logger.info(
-                "zip: a severe error in the zipfile format was detected. Processing probably failed immediately.\
-                 (return code {0})".format(ret_code))
-            return None
-        elif ret_code == 6:
-            logger.info(
-                "zip: entry too large to be processed (such as input files larger than 2 GB when not using Zip64 or\
-                 trying to read an existing archive that is too large) or entry too large to be split with zipsplit\
-                 (return code {0})".format(ret_code))
-            return None
-        elif ret_code == 7:
-            logger.info(
-                "zip: invalid comment format (return code {0})".format(ret_code))
-            return None
-        elif ret_code == 8:
-            logger.info(
-                "zip: zip -T failed or out of memory (return code {0})".format(ret_code))
-            return None
-        elif ret_code == 9:
-            logger.info(
-                "zip: the user aborted zip prematurely with control-C (or similar) (return code {0})".format(ret_code))
-            return None
-        elif ret_code == 10:
-            logger.info(
-                "zip: zip encountered an error while using a temp file (return code {0})".format(ret_code))
-            return None
-        elif ret_code == 11:
-            logger.info(
-                "zip: read or seek error (return code {0})".format(ret_code))
-            return None
-        elif ret_code == 12:
-            logger.info(
-                "zip: zip has nothing to do (return code {0})".format(ret_code))
-            return None
-        elif ret_code == 13:
-            logger.info(
-                "zip: missing or empty zip file (return code {0})".format(ret_code))
-            return None
-        elif ret_code == 14:
-            logger.info(
-                "zip: error writing to a file (return code {0})".format(ret_code))
-            return None
-        elif ret_code == 15:
-            logger.info(
-                "zip: zip was unable to create a file to write to (return code {0})".format(ret_code))
-            return None
-        elif ret_code == 16:
-            logger.info(
-                "zip: bad command line parameters (return code {0})".format(ret_code))
-            return None
-        elif ret_code == 18:
-            logger.info(
-                "zip: zip could not open a specified file to read (return code {0})".format(ret_code))
-            return None
-        elif ret_code == 19:
-            logger.info(
-                "zip: zip was compiled with options not supported on this system (return code {0})".format(ret_code))
-            return None
+    except Exception, e:
+        logging.error("Failed to create archive {0}: {1}".format(archive_file_path, e.message))
+        logging.debug("Error args: {0}".format(e.args))
+        return None
 
 
 def upload_archive(upload_mgr, archive_path, subdir_rel, aws_vault, archive_treehash, archive_size, dummy=False):
