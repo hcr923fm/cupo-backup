@@ -62,11 +62,11 @@ def archive_directory(top_dir, subdir, tmpdir):
     devnull = open(os.devnull, "wb")
     try:
         # TODO: Migrate from subprocess'ing zip to using zip module?
-        logging.debug("Calling zip -jD {0} {1}".format(archive_file_path, os.path.join(full_backup_path, "*")))
+        logging.debug("Calling zip -Dj {0} {1}".format(archive_file_path, os.path.join(full_backup_path, "*")))
         if args.debug:
-            subprocess.check_call(["zip", "-jD", archive_file_path, os.path.join(full_backup_path, "*")])
+            subprocess.check_call(["zip", "-Dj", archive_file_path, os.path.join(full_backup_path, "*")])
         else:
-            subprocess.check_call(["zip", "-jD", archive_file_path, os.path.join(full_backup_path, "*")],
+            subprocess.check_call(["zip", "-Dj", archive_file_path, os.path.join(full_backup_path, "*")],
                                   stdout=devnull, stderr=devnull)
         logger.info("Created archive at %s" % archive_file_path)
         return archive_file_path
