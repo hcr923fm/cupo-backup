@@ -8,7 +8,7 @@ import time
 class UploadManager():
     def __init__(self, db, client, vault_name):
         self._concurrent_upload_limit = 5
-        self.chunk_size = 16777216 # Multipart size in bytes
+        self.chunk_size = 16777216  # Multipart size in bytes
         self.db = db
         self.client = client
         self.vault_name = vault_name
@@ -28,15 +28,20 @@ class UploadManager():
             self.logger.debug("Error msg:\n{0}n\Error args:\n".format(e.message, e.args))
             return False
 
-        for i in xrange(0, archive_size+1, self.chunk_size):
+        for i in xrange(0, archive_size + 1, self.chunk_size):
             if i + self.chunk_size >= archive_size - 1:
                 last_byte = archive_size - 1
             else:
-                last_byte = i + self.chunk_size-1
+                last_byte = i + self.chunk_size - 1
 
             mongoops.create_mpart_part_entry(self.db, mongoops.get_vault_by_name(self.db, self.vault_name)["arn"],
                                              response["uploadId"], i, last_byte, tmp_archive_location)
 
+        # Remove dead threads
+        for t in self.upload_threads:
+            if not t.is_alive(): self.upload_threads.remove(t)
+
+        # And start new ones in their place!
         while len(self.upload_threads) < self._concurrent_upload_limit:
             t = threading.Thread(target=self.thread_worker,
                                  kwargs={"archive_size": archive_size,
@@ -82,9 +87,9 @@ class UploadManager():
             if not is_more:
                 try:
                     final_response = self.client.complete_multipart_upload(vaultName=self.vault_name,
-                                                      uploadId=mpart_entry["uploadId"],
-                                                      archiveSize=str(kwargs["archive_size"]),
-                                                      checksum=kwargs["archive_checksum"])
+                                                                           uploadId=mpart_entry["uploadId"],
+                                                                           archiveSize=str(kwargs["archive_size"]),
+                                                                           checksum=kwargs["archive_checksum"])
                     mongoops.create_archive_entry(self.db, kwargs["subdir_rel_path"],
                                                   mongoops.get_vault_by_name(self.db, self.vault_name)["arn"],
                                                   final_response["archiveId"], final_response["checksum"],
@@ -95,4 +100,3 @@ class UploadManager():
                     self.logger.error("Failed to complete mpart upload!")
                     self.logger.debug("Error msg:\n{0}\nError args:\n{1}".format(e.message, e.args))
                     continue
-
