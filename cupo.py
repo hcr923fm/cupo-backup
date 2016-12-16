@@ -54,6 +54,7 @@ def archive_directory(top_dir, subdir, tmpdir):
         # No point creating empty archives!
         return None
 
+    os.makedirs(os.path.join(tmpdir, subdir))
     archive_file_path = os.path.join(tmpdir, subdir) + ".zip"
 
     logger.info("Archiving %s to %s" % (subdir, archive_file_path))
