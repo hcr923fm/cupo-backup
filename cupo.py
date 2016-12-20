@@ -61,9 +61,9 @@ def archive_directory(top_dir, subdir, tmpdir):
 
     archive_file_path = os.path.join(tmpdir, subdir) + ".zip"
 
-    logger.info("Archiving %s to %s" % (subdir, archive_file_path))
+    files.sort()
 
-    # with open(os.devnull, "w") as devnull:
+    logger.info("Archiving %s to %s" % (subdir, archive_file_path))
 
     devnull = open(os.devnull, "wb")
 
