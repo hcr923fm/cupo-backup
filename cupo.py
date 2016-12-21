@@ -75,7 +75,7 @@ def archive_directory(top_dir, subdir, tmpdir):
                 for i in xrange(0, int(args.max_files)):
                     try:
                         f = files.pop()
-                        logger.debug("Adding {0} to archive {1} ({2}/{3})g".format(f, archive_file_path, i, args.max_files))
+                        logger.debug("Adding {0} to archive {1} ({2}/{3})".format(f, archive_file_path, i, args.max_files))
                         arch_tar.add(f, os.path.basename(f))
                     except IndexError, e:
                         # Run out of files, exit loop
@@ -91,17 +91,6 @@ def archive_directory(top_dir, subdir, tmpdir):
         logging.error("Failed to create archive {0}: {1}".format(archive_file_path, e.message))
         logging.debug("Error args: {0}".format(e.args))
         return None
-
-
-def upload_archive(upload_mgr, archive_path, subdir_rel, aws_vault, archive_treehash, archive_size, dummy=False):
-    logger.info("Uploading {0} to vault {1}".format(archive_path, aws_vault))
-    if not dummy:
-        upload_mgr.initialize_upload(archive_path, subdir_rel, archive_treehash, archive_size)
-    else:
-        # This is a dummy upload, for testing purposes. Create a fake
-        # AWS URI and location, but don't touch the archive.
-        logger.info("Dummy upload - not actually uploading archive!")
-
 
 def delete_aws_archive(archive_id, aws_vault):
     logger.info("Deleting archive with id {0} from vault {1}".format(
@@ -371,10 +360,15 @@ if __name__ == "__main__":
 
                 # If the hashes are the same - don't upload the archive; it already exists
                 if not compare_files(size_arch, archive_hash, size_remote, hash_remote):
-                    # Otherwise, upload the archive
-                    upload_archive(upload_mgr, tmp_archive_fullpath, backup_subdir_rel_filename, aws_vault_name,
-                                   archive_hash, size_arch,
-                                   args.dummy_upload)
+                    logger.info("Uploading {0} to vault {1}".format(tmp_archive_fullpath, aws_vault_name))
+                    if not args.dummy_upload:
+                        upload_mgr.initialize_upload(tmp_archive_fullpath, backup_subdir_rel_filename,
+                                                     archive_hash, size_arch)
+                    else:
+                        # This is a dummy upload, for testing purposes. Create a fake
+                        # AWS URI and location, but don't touch the archive.
+                        logger.info("Dummy upload - not actually uploading archive!")
+
                 else:
                     logger.info("Skipped uploading {0} - archive has not changed".format(
                         backup_subdir_rel_filename))
