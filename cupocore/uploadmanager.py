@@ -79,6 +79,7 @@ class UploadManager():
             except Exception, e:
                 self.logger.error("Failed to upload mpart!")
                 self.logger.debug("Error msg:\n{0}\nError args:\n{1}".format(e.message, e.args))
+                self.logger.debug(e.__repr__)
                 mongoops.set_mpart_inactive(self.db, mpart_entry["_id"])
                 continue
 
@@ -100,3 +101,8 @@ class UploadManager():
                     self.logger.error("Failed to complete mpart upload!")
                     self.logger.debug("Error msg:\n{0}\nError args:\n{1}".format(e.message, e.args))
                     continue
+
+    def wait_for_finish(self):
+        for t in self.upload_threads:
+            if t.is_alive:
+                t.join()

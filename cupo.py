@@ -399,6 +399,9 @@ if __name__ == "__main__":
     else:
         logger.info("Skipping archive pruning - '--no-prune' supplied.")
 
+    # Wait for uploads to complete
+
+    upload_mgr.wait_for_finish()
     # Finished with the database
     logger.info("Closing MongoDB database\r\n\r\n")
     db_client.close()
