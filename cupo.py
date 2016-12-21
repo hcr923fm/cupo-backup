@@ -71,7 +71,7 @@ def archive_directory(top_dir, subdir, tmpdir):
 
     try:
         while files:
-            with tarfile.TarFile(archive_file_path, "w:gz") as arch_tar:
+            with tarfile.open(archive_file_path, "w:gz") as arch_tar:
                 for i in xrange(0, int(args.max_files)):
                     try:
                         f = files.pop()
@@ -352,8 +352,6 @@ if __name__ == "__main__":
                 with open(tmp_archive_fullpath, 'rb') as arch_f:
                     # archive_hash = calculate_tree_hash(arch_f)
                     archive_hash = botocore.utils.calculate_tree_hash(arch_f)
-
-
 
                 # Find most recent version of this file in Glacier
                 most_recent_version = cupocore.mongoops.get_most_recent_version_of_archive(db, aws_vault_name,
