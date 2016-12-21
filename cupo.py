@@ -72,7 +72,7 @@ def archive_directory(top_dir, subdir, tmpdir):
     try:
         while files:
             with zipfile.ZipFile(archive_file_path, "w", compression=zipfile.ZIP_DEFLATED, allowZip64=True) as arch_zip:
-                for i in xrange(0, args.max_files):
+                for i in xrange(0, int(args.max_files)):
                     try:
                         f = files.pop()
                         logger.debug("Adding {0} to archive {1}".format(f, archive_file_path))
