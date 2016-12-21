@@ -71,7 +71,7 @@ def archive_directory(top_dir, subdir, tmpdir):
 
     try:
         while files:
-            arch_zip = zipfile.ZipFile(open(archive_file_path, "w"), compression=zipfile.ZIP_DEFLATED, allowZip64=True)
+            arch_zip = zipfile.ZipFile(open(archive_file_path, "w"), allowZip64=True)
             for i in xrange(0, int(args.max_files)):
                 try:
                     f = files.pop()
