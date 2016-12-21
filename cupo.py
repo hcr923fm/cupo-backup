@@ -59,20 +59,32 @@ def archive_directory(top_dir, subdir, tmpdir):
     except Exception:
         pass
 
-    archive_file_path = os.path.join(tmpdir, subdir) + ".zip"
-
     files.sort()
-
-    logger.info("Archiving %s to %s" % (subdir, archive_file_path))
 
     devnull = open(os.devnull, "wb")
 
+    archive_list = []
+    cur_arch_suffix = 1
+
+    archive_file_path = os.path.join(tmpdir, subdir) + "." + str(cur_arch_suffix) + ".zip"
+    logger.info("Archiving %s to %s" % (subdir, archive_file_path))
+
     try:
-        with zipfile.ZipFile(archive_file_path, "w", compression=zipfile.ZIP_DEFLATED, allowZip64=True) as arch_zip:
-            for f in files:
-                logger.debug("Adding {0} to archive {1}".format(f, archive_file_path))
-                arch_zip.write(f, os.path.basename(f))
-            return archive_file_path
+        while files:
+            with zipfile.ZipFile(archive_file_path, "w", compression=zipfile.ZIP_DEFLATED, allowZip64=True) as arch_zip:
+                for i in xrange(0, args.max_files):
+                    try:
+                        f = files.pop()
+                        logger.debug("Adding {0} to archive {1}".format(f, archive_file_path))
+                        arch_zip.write(f, os.path.basename(f))
+                    except IndexError, e:
+                        # Run out of files, exit loop
+                        logger.info("Completed adding files to archive")
+                        break
+            archive_list.append(archive_file_path)
+            cur_arch_suffix += 1
+
+        return archive_list
 
     except Exception, e:
         logging.error("Failed to create archive {0}: {1}".format(archive_file_path, e.message))
@@ -326,46 +338,47 @@ if __name__ == "__main__":
         upload_mgr = cupocore.uploadmanager.UploadManager(db, boto_client, aws_vault_name)
 
         for subdir_to_backup in subdirs_to_backup:
-
-            # Archive each folder in the list to it's own ZIP file
-            tmp_archive_fullpath = archive_directory(root_dir, subdir_to_backup, temp_dir)
-            if not tmp_archive_fullpath:
-                # Directory was empty - not being archived
-                continue
-
-            # Calculate the treehash of the local archive
-            with open(tmp_archive_fullpath, 'rb') as arch_f:
-                # archive_hash = calculate_tree_hash(arch_f)
-                archive_hash = botocore.utils.calculate_tree_hash(arch_f)
-
+            # Archive each folder in the list to it's own (series of) ZIP file(s)
+            tmp_archive_fullpath_list = archive_directory(root_dir, subdir_to_backup, temp_dir)
             backup_subdir_abs_filename = os.path.join(root_dir, subdir_to_backup) + ".zip"
             backup_subdir_rel_filename = subdir_to_backup + ".zip"
 
-            # Find most recent version of this file in Glacier
-            most_recent_version = cupocore.mongoops.get_most_recent_version_of_archive(db, aws_vault_name,
-                                                                                       backup_subdir_rel_filename)
+            if not tmp_archive_fullpath_list:
+                # Directory was empty - not being archived
+                continue
+            for tmp_archive_fullpath in tmp_archive_fullpath_list:
+                # Calculate the treehash of the local archive
+                with open(tmp_archive_fullpath, 'rb') as arch_f:
+                    # archive_hash = calculate_tree_hash(arch_f)
+                    archive_hash = botocore.utils.calculate_tree_hash(arch_f)
 
-            if most_recent_version:
-                logger.info("Archive for this path exists in local database")
-                hash_remote = most_recent_version['treehash']
-                size_remote = most_recent_version['size']
 
-            else:
-                logger.info("No archive found for this path in local database")
-                hash_remote = size_remote = None
 
-            # Compare it against the local copy of the Glacier version of the archive
-            size_arch = os.stat(tmp_archive_fullpath).st_size
+                # Find most recent version of this file in Glacier
+                most_recent_version = cupocore.mongoops.get_most_recent_version_of_archive(db, aws_vault_name,
+                                                                                           backup_subdir_rel_filename)
 
-            # If the hashes are the same - don't upload the archive; it already exists
-            if not compare_files(size_arch, archive_hash, size_remote, hash_remote):
-                # Otherwise, upload the archive
-                upload_archive(upload_mgr, tmp_archive_fullpath, backup_subdir_rel_filename, aws_vault_name,
-                               archive_hash, size_arch,
-                               args.dummy_upload)
-            else:
-                logger.info("Skipped uploading {0} - archive has not changed".format(
-                    backup_subdir_rel_filename))
+                if most_recent_version:
+                    logger.info("Archive for this path exists in local database")
+                    hash_remote = most_recent_version['treehash']
+                    size_remote = most_recent_version['size']
+
+                else:
+                    logger.info("No archive found for this path in local database")
+                    hash_remote = size_remote = None
+
+                # Compare it against the local copy of the Glacier version of the archive
+                size_arch = os.stat(tmp_archive_fullpath).st_size
+
+                # If the hashes are the same - don't upload the archive; it already exists
+                if not compare_files(size_arch, archive_hash, size_remote, hash_remote):
+                    # Otherwise, upload the archive
+                    upload_archive(upload_mgr, tmp_archive_fullpath, backup_subdir_rel_filename, aws_vault_name,
+                                   archive_hash, size_arch,
+                                   args.dummy_upload)
+                else:
+                    logger.info("Skipped uploading {0} - archive has not changed".format(
+                        backup_subdir_rel_filename))
 
                 # Delete the temporary archive
                 logger.info("Removing temporary archive")
