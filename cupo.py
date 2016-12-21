@@ -76,7 +76,7 @@ def archive_directory(top_dir, subdir, tmpdir):
                 for i in xrange(0, int(args.max_files)):
                     try:
                         f = files.pop()
-                        logger.debug("Adding {0} to archive {1} ({2}/{3}".format(f, archive_file_path, i, args.max_files))
+                        logger.debug("Adding {0} to archive {1} ({2}/{3})g".format(f, archive_file_path, i, args.max_files))
                         arch_tar.add(f, os.path.basename(f))
                     except IndexError, e:
                         # Run out of files, exit loop
