@@ -66,12 +66,11 @@ def archive_directory(top_dir, subdir, tmpdir):
     archive_list = []
     cur_arch_suffix = 1
 
-    archive_file_path = "{0}.{1:08d}.tar.gz".format(os.path.join(tmpdir, subdir),cur_arch_suffix)
-
-    logger.info("Archiving %s to %s" % (subdir, archive_file_path))
-
     try:
         while files:
+            archive_file_path = "{0}.{1:08d}.tar.gz".format(os.path.join(tmpdir, subdir), cur_arch_suffix)
+            logger.info("Archiving %s to %s" % (subdir, archive_file_path))
+
             with tarfile.open(archive_file_path, "w:gz") as arch_tar:
                 for i in xrange(0, int(args.max_files)):
                     try:
