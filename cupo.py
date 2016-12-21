@@ -384,6 +384,8 @@ if __name__ == "__main__":
                     cupocore.mongoops.mark_archive_for_deletion(db, arch["_id"])
             else:
                 logger.info("Not marking old versions")
+        # Wait for uploads to complete
+        upload_mgr.wait_for_finish()
 
         # Delete the temporary directory.
         logger.info("Removing temporary working folder")
@@ -399,9 +401,6 @@ if __name__ == "__main__":
     else:
         logger.info("Skipping archive pruning - '--no-prune' supplied.")
 
-    # Wait for uploads to complete
-
-    upload_mgr.wait_for_finish()
     # Finished with the database
     logger.info("Closing MongoDB database\r\n\r\n")
     db_client.close()

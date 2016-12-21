@@ -91,14 +91,28 @@ class UploadManager():
                                                                            uploadId=mpart_entry["uploadId"],
                                                                            archiveSize=str(kwargs["archive_size"]),
                                                                            checksum=kwargs["archive_checksum"])
+                except Exception, e:
+                    self.logger.error("Failed to complete mpart upload at AWS!")
+                    self.logger.debug("Error msg:\n{0}\nError args:\n{1}".format(e.message, e.args))
+                    continue
+
+                try:
                     mongoops.create_archive_entry(self.db, kwargs["subdir_rel_path"],
                                                   mongoops.get_vault_by_name(self.db, self.vault_name)["arn"],
                                                   final_response["archiveId"], final_response["checksum"],
                                                   kwargs["archive_size"], final_response["location"])
+
+                except Exception, e:
+                    self.logger.error("Failed to complete mpart upload - could not create DB archive entry")
+                    self.logger.debug("Error msg:\n{0}\nError args:\n{1}".format(e.message, e.args))
+                    continue
+
+                try:
                     os.remove(mpart_entry["tmp_archive_location"])
                     self.logger.info("Completed upload of {0}".format(mpart_entry["tmp_archive_location"]))
+
                 except Exception, e:
-                    self.logger.error("Failed to complete mpart upload!")
+                    self.logger.error("Failed to complete mpart upload - could not remove temp archive")
                     self.logger.debug("Error msg:\n{0}\nError args:\n{1}".format(e.message, e.args))
                     continue
 
