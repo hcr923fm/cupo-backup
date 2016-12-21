@@ -7,4 +7,5 @@
   "logging_dir": "/home/USERNAME",
   "backup_directory": "/path/to/dir",
   "temp_dir": ""
+  "max_files": 999
 }

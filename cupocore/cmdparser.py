@@ -52,6 +52,11 @@ def __parse_cmd_args(options_namespace):
                                    help="If passed, the specified directory will be used to store temporary upload and \
                                         download chunks. Use when the drive with the default tempdir has little \
                                         available space")
+    arg_parser_backup.add_argument("-x", "--max-files",
+                                   help="If passed, the maximum amount of files that should exist in a single archive\
+                                    before a subsequent archive is created to continue backing up the directory.\
+                                     Use with directories with large numbers of files",
+                                   default="999")
 
     arg_parser_retrieve = subparsers.add_parser('retrieve',
                                                 help="Retrieve a directory tree from the specified vault and download \
@@ -127,7 +132,8 @@ def create_config_file(file_location):
                    "debug": False,
                    "logging_dir": "",
                    "backup_directory": "",
-                   "temp_dir":""
+                   "temp_dir":"",
+                   "max_files": 999
                    }
 
     with open(file_location, "w") as f:
