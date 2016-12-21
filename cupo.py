@@ -71,16 +71,17 @@ def archive_directory(top_dir, subdir, tmpdir):
 
     try:
         while files:
-            with zipfile.ZipFile(archive_file_path, "w", compression=zipfile.ZIP_DEFLATED, allowZip64=True) as arch_zip:
-                for i in xrange(0, int(args.max_files)):
-                    try:
-                        f = files.pop()
-                        logger.debug("Adding {0} to archive {1}".format(f, archive_file_path))
-                        arch_zip.write(f, os.path.basename(f))
-                    except IndexError, e:
-                        # Run out of files, exit loop
-                        logger.info("Completed adding files to archive")
-                        break
+            arch_zip = zipfile.ZipFile(open(archive_file_path, "w"), compression=zipfile.ZIP_DEFLATED, allowZip64=True)
+            for i in xrange(0, int(args.max_files)):
+                try:
+                    f = files.pop()
+                    logger.debug("Adding {0} to archive {1}".format(f, archive_file_path))
+                    arch_zip.write(f, os.path.basename(f))
+                except IndexError, e:
+                    # Run out of files, exit loop
+                    logger.info("Completed adding files to archive")
+                    break
+            arch_zip.close()
             archive_list.append(archive_file_path)
             cur_arch_suffix += 1
 
@@ -379,10 +380,6 @@ if __name__ == "__main__":
                 else:
                     logger.info("Skipped uploading {0} - archive has not changed".format(
                         backup_subdir_rel_filename))
-
-                # Delete the temporary archive
-                logger.info("Removing temporary archive")
-                os.remove(tmp_archive_fullpath)
 
             # Find archives older than three months, with three more recent versions
             # available

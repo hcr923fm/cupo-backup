@@ -94,7 +94,7 @@ class UploadManager():
                                                   mongoops.get_vault_by_name(self.db, self.vault_name)["arn"],
                                                   final_response["archiveId"], final_response["checksum"],
                                                   kwargs["archive_size"], final_response["location"])
-                    #os.remove(mpart_entry["tmp_archive_location"])
+                    os.remove(mpart_entry["tmp_archive_location"])
                     self.logger.info("Completed upload of {0}".format(mpart_entry["tmp_archive_location"]))
                 except Exception, e:
                     self.logger.error("Failed to complete mpart upload!")
