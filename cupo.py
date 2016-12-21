@@ -1,7 +1,7 @@
 import os, os.path
 import subprocess
 import tempfile
-import zipfile
+import tarfile
 import botocore.utils, botocore.exceptions
 import boto3
 import logging, logging.handlers
@@ -66,22 +66,22 @@ def archive_directory(top_dir, subdir, tmpdir):
     archive_list = []
     cur_arch_suffix = 1
 
-    archive_file_path = os.path.join(tmpdir, subdir) + "." + str(cur_arch_suffix) + ".zip"
+    archive_file_path = os.path.join(tmpdir, subdir) + "." + str(cur_arch_suffix) + ".tar.gz"
     logger.info("Archiving %s to %s" % (subdir, archive_file_path))
 
     try:
         while files:
-            arch_zip = zipfile.ZipFile(open(archive_file_path, "w"), allowZip64=True)
-            for i in xrange(0, int(args.max_files)):
-                try:
-                    f = files.pop()
-                    logger.debug("Adding {0} to archive {1}".format(f, archive_file_path))
-                    arch_zip.write(f, os.path.basename(f))
-                except IndexError, e:
-                    # Run out of files, exit loop
-                    logger.info("Completed adding files to archive")
-                    break
-            arch_zip.close()
+            with tarfile.TarFile(archive_file_path, "w:gz") as arch_tar:
+                for i in xrange(0, int(args.max_files)):
+                    try:
+                        f = files.pop()
+                        logger.debug("Adding {0} to archive {1}".format(f, archive_file_path))
+                        arch_tar.add(f, os.path.basename(f))
+                    except IndexError, e:
+                        # Run out of files, exit loop
+                        logger.info("Completed adding files to archive")
+                        break
+
             archive_list.append(archive_file_path)
             cur_arch_suffix += 1
 
@@ -334,15 +334,15 @@ if __name__ == "__main__":
 
         subdirs_to_backup = list_dirs(root_dir)  # List of subtrees, relative to root_dir
         subdirs_to_backup.append(
-            "")  # TODO-archiveroot: #4 Dammit I will get this working - get the root directory contents to be zipped
+            "")  # TODO-archiveroot: #4 Dammit I will get this working - get the root directory contents to be tarred
 
         upload_mgr = cupocore.uploadmanager.UploadManager(db, boto_client, aws_vault_name)
 
         for subdir_to_backup in subdirs_to_backup:
-            # Archive each folder in the list to it's own (series of) ZIP file(s)
+            # Archive each folder in the list to it's own (series of) tar file(s)
             tmp_archive_fullpath_list = archive_directory(root_dir, subdir_to_backup, temp_dir)
-            backup_subdir_abs_filename = os.path.join(root_dir, subdir_to_backup) + ".zip"
-            backup_subdir_rel_filename = subdir_to_backup + ".zip"
+            backup_subdir_abs_filename = os.path.join(root_dir, subdir_to_backup) + ".tar.gz"
+            backup_subdir_rel_filename = subdir_to_backup + ".tar.gz"
 
             if not tmp_archive_fullpath_list:
                 # Directory was empty - not being archived
