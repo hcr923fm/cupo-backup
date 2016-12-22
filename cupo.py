@@ -75,7 +75,8 @@ def archive_directory(top_dir, subdir, tmpdir):
                 for i in xrange(0, int(args.max_files)):
                     try:
                         f = files.pop()
-                        logger.debug("Adding {0} to archive {1} ({2}/{3})".format(f, archive_file_path, i+1, args.max_files))
+                        logger.debug(
+                            "Adding {0} to archive {1} ({2}/{3})".format(f, archive_file_path, i + 1, args.max_files))
                         arch_tar.add(f, os.path.basename(f))
                     except IndexError, e:
                         # Run out of files, exit loop
@@ -91,6 +92,7 @@ def archive_directory(top_dir, subdir, tmpdir):
         logging.error("Failed to create archive {0}: {1}".format(archive_file_path, e.message))
         logging.debug("Error args: {0}".format(e.args))
         return None
+
 
 def delete_aws_archive(archive_id, aws_vault):
     logger.info("Deleting archive with id {0} from vault {1}".format(
@@ -330,13 +332,15 @@ if __name__ == "__main__":
         for subdir_to_backup in subdirs_to_backup:
             # Archive each folder in the list to it's own (series of) tar file(s)
             tmp_archive_fullpath_list = archive_directory(root_dir, subdir_to_backup, temp_dir)
-            backup_subdir_abs_filename = os.path.join(root_dir, subdir_to_backup) + ".tar.gz"
-            backup_subdir_rel_filename = subdir_to_backup + ".tar.gz"
 
             if not tmp_archive_fullpath_list:
                 # Directory was empty - not being archived
                 continue
             for tmp_archive_fullpath in tmp_archive_fullpath_list:
+
+                backup_subdir_abs_filename = os.path.join(root_dir, subdir_to_backup,
+                                                          os.path.basename(tmp_archive_fullpath))
+                backup_subdir_rel_filename = os.path.join(subdir_to_backup, os.path.basename(tmp_archive_fullpath))
                 # Calculate the treehash of the local archive
                 with open(tmp_archive_fullpath, 'rb') as arch_f:
                     # archive_hash = calculate_tree_hash(arch_f)
@@ -362,7 +366,7 @@ if __name__ == "__main__":
                 if not compare_files(size_arch, archive_hash, size_remote, hash_remote):
                     logger.info("Uploading {0} to vault {1}".format(tmp_archive_fullpath, aws_vault_name))
                     if not args.dummy_upload:
-                        upload_mgr.initialize_upload(tmp_archive_fullpath, backup_subdir_rel_filename,
+                        upload_mgr.initialize_upload(tmp_archive_fullpath, os.path.dirname(backup_subdir_rel_filename),
                                                      archive_hash, size_arch)
                     else:
                         # This is a dummy upload, for testing purposes. Create a fake

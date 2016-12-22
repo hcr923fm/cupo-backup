@@ -97,7 +97,9 @@ class UploadManager():
 
                 try:
 
-                    mongoops.create_archive_entry(self.db, mpart_entry["subdir_rel_path"],
+                    mongoops.create_archive_entry(self.db, os.path.join(mpart_entry["subdir_rel_path"],
+                                                                        os.path.basename(
+                                                                            mpart_entry["tmp_archive_location"])),
                                                   mongoops.get_vault_by_name(self.db, self.vault_name)["arn"],
                                                   final_response["archiveId"], final_response["checksum"],
                                                   mpart_entry["full_size"], final_response["location"])
