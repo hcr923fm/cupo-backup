@@ -102,13 +102,18 @@ def create_archive_entry(db, archived_dir_path, vault_arn, aws_archive_id,
     return db['archives'].insert(doc_arch)
 
 
-def create_mpart_part_entry(db, vault_arn, uploadId, first_byte, last_byte, tmp_archive_location):
+def create_mpart_part_entry(db, vault_arn, uploadId, first_byte, last_byte, tmp_archive_location, arch_size,
+                            arch_checksum, subdir_rel_path):
     doc_mpart = {}
     doc_mpart["uploadId"] = uploadId
     doc_mpart["is_active"] = False
     doc_mpart["first_byte"] = first_byte
     doc_mpart["last_byte"] = last_byte
     doc_mpart["tmp_archive_location"] = tmp_archive_location
+    doc_mpart["full_size"] = arch_size
+    doc_mpart["full_hash"] = arch_checksum
+    doc_mpart["subdir_rel_path"] = subdir_rel_path
+
 
     return db["mparts"].insert(doc_mpart)
 

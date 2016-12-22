@@ -35,7 +35,8 @@ class UploadManager():
                 last_byte = i + self.chunk_size - 1
 
             mongoops.create_mpart_part_entry(self.db, mongoops.get_vault_by_name(self.db, self.vault_name)["arn"],
-                                             response["uploadId"], i, last_byte, tmp_archive_location)
+                                             response["uploadId"], i, last_byte, tmp_archive_location, archive_size,
+                                             archive_checksum, subdir_rel_path)
 
         # Remove dead threads
         for t in self.upload_threads:
@@ -43,10 +44,8 @@ class UploadManager():
 
         # And start new ones in their place!
         while len(self.upload_threads) < self._concurrent_upload_limit:
-            t = threading.Thread(target=self.thread_worker,
-                                 kwargs={"archive_size": archive_size,
-                                         "archive_checksum": archive_checksum,
-                                         "subdir_rel_path": subdir_rel_path})
+            t = threading.Thread(target=self.thread_worker)
+
             self.upload_threads.append(t)
             t.start()
             time.sleep(2)
@@ -89,18 +88,19 @@ class UploadManager():
                 try:
                     final_response = self.client.complete_multipart_upload(vaultName=self.vault_name,
                                                                            uploadId=mpart_entry["uploadId"],
-                                                                           archiveSize=str(kwargs["archive_size"]),
-                                                                           checksum=kwargs["archive_checksum"])
+                                                                           archiveSize=str(mpart_entry["full_size"]),
+                                                                           checksum=mpart_entry["full_hash"])
                 except Exception, e:
                     self.logger.error("Failed to complete mpart upload at AWS!")
                     self.logger.debug("Error msg:\n{0}\nError args:\n{1}".format(e.message, e.args))
                     continue
 
                 try:
-                    mongoops.create_archive_entry(self.db, kwargs["subdir_rel_path"],
+
+                    mongoops.create_archive_entry(self.db, mpart_entry["subdir_rel_path"],
                                                   mongoops.get_vault_by_name(self.db, self.vault_name)["arn"],
                                                   final_response["archiveId"], final_response["checksum"],
-                                                  kwargs["archive_size"], final_response["location"])
+                                                  mpart_entry["full_size"], final_response["location"])
 
                 except Exception, e:
                     self.logger.error("Failed to complete mpart upload - could not create DB archive entry")

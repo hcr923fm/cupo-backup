@@ -75,7 +75,7 @@ def archive_directory(top_dir, subdir, tmpdir):
                 for i in xrange(0, int(args.max_files)):
                     try:
                         f = files.pop()
-                        logger.debug("Adding {0} to archive {1} ({2}/{3})".format(f, archive_file_path, i, args.max_files))
+                        logger.debug("Adding {0} to archive {1} ({2}/{3})".format(f, archive_file_path, i+1, args.max_files))
                         arch_tar.add(f, os.path.basename(f))
                     except IndexError, e:
                         # Run out of files, exit loop
@@ -356,7 +356,7 @@ if __name__ == "__main__":
                     hash_remote = size_remote = None
 
                 # Compare it against the local copy of the Glacier version of the archive
-                size_arch = os.stat(tmp_archive_fullpath).st_size
+                size_arch = os.path.getsize(tmp_archive_fullpath)
 
                 # If the hashes are the same - don't upload the archive; it already exists
                 if not compare_files(size_arch, archive_hash, size_remote, hash_remote):
