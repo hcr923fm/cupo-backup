@@ -89,7 +89,7 @@ def archive_directory(top_dir, subdir, tmpdir):
         return archive_list
 
     except Exception, e:
-        logging.error("Failed to create archive {0}: {1}".format(archive_file_path, e.message))
+        logging.error("Failed to create archive: {0}".format(e.message))
         logging.debug("Error args: {0}".format(e.args))
         return None
 
