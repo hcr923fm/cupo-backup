@@ -377,17 +377,17 @@ if __name__ == "__main__":
                     logger.info("Skipped uploading {0} - archive has not changed".format(
                         backup_subdir_rel_filename))
 
-            # Find archives older than three months, with three more recent versions
-            # available
-            # This could only be the case when we've uploaded a new version of an archive, thereby
-            # making an old version irrelevant - so we only need to look for archives with this path.
-            if not args.no_prune:
-                old_archives = cupocore.mongoops.get_old_archives(db, backup_subdir_rel_filename, aws_vault_name)
-                for arch in old_archives:
-                    logger.info("Marking archive with ID {0} as redundant".format(arch["_id"]))
-                    cupocore.mongoops.mark_archive_for_deletion(db, arch["_id"])
-            else:
-                logger.info("Not marking old versions")
+                # Find archives older than three months, with three more recent versions
+                # available
+                # This could only be the case when we've uploaded a new version of an archive, thereby
+                # making an old version irrelevant - so we only need to look for archives with this path.
+                if not args.no_prune:
+                    old_archives = cupocore.mongoops.get_old_archives(db, backup_subdir_rel_filename, aws_vault_name)
+                    for arch in old_archives:
+                        logger.info("Marking archive with ID {0} as redundant".format(arch["_id"]))
+                        cupocore.mongoops.mark_archive_for_deletion(db, arch["_id"])
+                else:
+                    logger.info("Not marking old versions")
         # Wait for uploads to complete
         upload_mgr.wait_for_finish()
 
