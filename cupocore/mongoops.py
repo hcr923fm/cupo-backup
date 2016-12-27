@@ -199,6 +199,7 @@ def get_old_archives(db, archived_dir_path, vault_name):
     deadline_ts = time.mktime(deadline_dt.timetuple())
     cursor = db["archives"].find({"to_delete": 0,
                                   "path": archived_dir_path,
+                                  "vault_arn": vault_arn,
                                   "uploaded_time":
                                       {"$lt": deadline_ts}
                                   },
