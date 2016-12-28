@@ -55,8 +55,7 @@ def __parse_cmd_args(options_namespace):
     arg_parser_backup.add_argument("-x", "--max-files",
                                    help="If passed, the maximum amount of files that should exist in a single archive\
                                     before a subsequent archive is created to continue backing up the directory.\
-                                     Use with directories with large numbers of files",
-                                   default="999")
+                                     Use with directories with large numbers of files")
 
     arg_parser_retrieve = subparsers.add_parser('retrieve',
                                                 help="Retrieve a directory tree from the specified vault and download \
