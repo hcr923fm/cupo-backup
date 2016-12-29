@@ -72,7 +72,7 @@ def archive_directory(top_dir, subdir, tmpdir):
             logger.info("Archiving %s to %s" % (subdir, archive_file_path))
 
             #with tarfile.open(archive_file_path, "w:gz") as arch_tar:
-            arch_zip = zipfile.ZipFile(open(archive_file_path, "wb"), "w")
+            arch_zip = zipfile.ZipFile(open(archive_file_path, "wb"), "w", allowZip64=True)
             for i in xrange(0, int(args.max_files)):
                 try:
                     f = files.pop()
