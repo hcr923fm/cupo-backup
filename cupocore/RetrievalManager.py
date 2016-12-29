@@ -36,6 +36,8 @@ class RetrievalManager():
                                             init_job_ret["location"],
                                             download_location)
 
+        if not self.check_for_jobs.isSet(): self.check_for_jobs.set()
+        self.retrieval_thread.start()
         return True
 
     def check_job_status(self, job_id):
@@ -85,29 +87,30 @@ class RetrievalManager():
                 # And unzip it
                 self.dearchive_file(local_arch_fullpath)
 
-            # Delete the 7z file
-            self.logger.info("Removing archive {0}".format(local_arch_fullpath))
-            os.remove(local_arch_fullpath)
+                # Delete the 7z file
+                self.logger.info("Removing archive {0}".format(local_arch_fullpath))
+                os.remove(local_arch_fullpath)
 
     def download_archive(self, job_entry):
         archive_entry = mongoops.get_archive_by_id(self.db, job_entry["archive_id"])
         tmp_dir = tempfile.mkdtemp()
 
-        # Break the job up into 128MB chunks to make life easier
+        # Break the job up into chunks to make life easier
         chunk_files = []
+        chunk_size = 16777216
 
         last_byte_downloaded = -1
 
         while last_byte_downloaded < archive_entry["size"]:
             byte_first = last_byte_downloaded + 1
-            if (128 * 1000000 + last_byte_downloaded) >= archive_entry["size"]:
-                byte_last = archive_entry["size"]
+            if (chunk_size + last_byte_downloaded) >= archive_entry["size"] - 1:
+                byte_last = archive_entry["size"] - 1
             else:
-                byte_last = 128 * 1000000 + last_byte_downloaded
+                byte_last = chunk_size + last_byte_downloaded
 
             response = self.client.get_job_output(vaultName=self.vault_name,
                                                   jobId=job_entry["_id"],
-                                                  range="bytes={0}-{1}".format(byte_first, byte_last))
+                                                  range="bytes {0}-{1}/*".format(byte_first, byte_last))
 
             if response["status"] == 200 or response["status"] == 206:
                 tmp_chunk_fd, tmp_chunk_path = tempfile.mkstemp(dir=tmp_dir)
@@ -147,6 +150,7 @@ class RetrievalManager():
 
         self.logger.info("Removing temp dir at{0}".format(tmp_dir))
         os.rmdir(tmp_dir)
+
 
         # Make sure that local treehash matches original upload treehash
         with open(download_fullpath, "rb"):

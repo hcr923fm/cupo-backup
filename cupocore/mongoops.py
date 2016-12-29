@@ -52,6 +52,7 @@ def create_backup_database(database_name, db_client, drop_existing=True):
         db.create_collection('archives')
         db.create_collection('vaults')
         db.create_collection('jobs')
+        db.create_collection('mparts')
 
         return db
 
@@ -99,6 +100,58 @@ def create_archive_entry(db, archived_dir_path, vault_arn, aws_archive_id,
 
     # Add the entry.
     return db['archives'].insert(doc_arch)
+
+
+def create_mpart_part_entry(db, vault_arn, uploadId, first_byte, last_byte, tmp_archive_location, arch_size,
+                            arch_checksum, subdir_rel_path):
+    doc_mpart = {}
+    doc_mpart["uploadId"] = uploadId
+    doc_mpart["is_active"] = False
+    doc_mpart["first_byte"] = first_byte
+    doc_mpart["last_byte"] = last_byte
+    doc_mpart["tmp_archive_location"] = tmp_archive_location
+    doc_mpart["full_size"] = arch_size
+    doc_mpart["full_hash"] = arch_checksum
+    doc_mpart["subdir_rel_path"] = subdir_rel_path
+
+
+    return db["mparts"].insert(doc_mpart)
+
+
+# TODO: Make this correct
+def get_oldest_inactive_mpart_entry(db, vault_name):
+    vault = get_vault_by_name(db, vault_name)
+    return db["mparts"].find_one(
+        {"is_active": False},
+        sort=[('first_byte', pymongo.ASCENDING)])
+
+
+def set_mpart_active(db, mpart_id):
+    db["mparts"].find_one_and_update({"_id": mpart_id},
+                                     {"$set":
+                                          {"is_active": True}
+                                      })
+
+
+def set_mpart_inactive(db, mpart_id):
+    db["mparts"].find_one_and_update({"_id": mpart_id},
+                                     {"$set":
+                                          {"is_active": False}
+                                      })
+
+
+def delete_mpart_entry(db, mpart_id):
+    return db["mparts"].delete_one({"_id": mpart_id})
+
+
+def is_existing_mparts_remaining(db, vault_name, uploadId):
+    vault = get_vault_by_name(db, vault_name)
+    p = db["mparts"].find_one(
+        {"uploadId": uploadId})
+    if not p:
+        return False
+    else:
+        return True
 
 
 def create_retrieval_entry(db, vault_arn, archive_id, aws_job_id, aws_job_location, download_path):
@@ -161,6 +214,7 @@ def get_old_archives(db, archived_dir_path, vault_name):
     deadline_ts = time.mktime(deadline_dt.timetuple())
     cursor = db["archives"].find({"to_delete": 0,
                                   "path": archived_dir_path,
+                                  "vault_arn": vault_arn,
                                   "uploaded_time":
                                       {"$lt": deadline_ts}
                                   },

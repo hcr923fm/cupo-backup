@@ -1,11 +1,12 @@
 import os, os.path
 import subprocess
 import tempfile
+import tarfile
 import botocore.utils, botocore.exceptions
 import boto3
-import time
 import logging, logging.handlers
 import cupocore
+import shutil
 
 __author__ = 'Callum McLean <calmcl1@aol.com>'
 __version__ = '0.1.0'
@@ -44,111 +45,53 @@ def archive_directory(top_dir, subdir, tmpdir):
 
     # Only add files to 'files' list, not subdirs
     for c in dir_contents:
-        fpath = os.path.join(top_dir, subdir, c)
+        fpath = os.path.join(full_backup_path, c)
         if os.path.isfile(fpath) and not fpath.endswith(".ini"):
             # logger.info("Adding to archive list: {0}".format(c))
             files.append(fpath)
 
-    if files:  # No point creating empty archives!
-        archive_file_path = os.path.join(tmpdir, os.path.basename(subdir)) + ".7z"
+    if not files:
+        # No point creating empty archives!
+        return None
 
-        logger.info("Archiving %s to %s" % (subdir, archive_file_path))
+    try:
+        os.makedirs(os.path.join(tmpdir, subdir))
+    except Exception:
+        pass
 
-        # with open(os.devnull, "w") as devnull:
+    files.sort()
 
-        devnull = open(os.devnull, "wb")
-        try:
-            subprocess.check_call(
-                ["7z", "a", "-t7z", archive_file_path, os.path.join(full_backup_path, "*"),
-                 "-m0=BZip2", "-y", "-aoa", "-xr-!*/", "-xr-!*sync-conflict*",
-                 "-xr-!*desktop.ini", "-xr-!*.tmp", "-xr-!*thumbs.db"], stdout=devnull, stderr=devnull)
-            logger.info("Created archive at %s" % archive_file_path)
-            return archive_file_path
+    devnull = open(os.devnull, "wb")
 
-        except subprocess.CalledProcessError, e:
-            ret_code = e.returncode
-            if ret_code == 1:
-                # Warning (Non fatal error(s)). For example, one or more files were locked by some
-                # other application, so they were not compressed.
-                logger.info("7-Zip: Non-fatal error (return code 1)")
-                return None
-            elif ret_code == 2:
-                # Fatal error
-                logger.info("7-Zip: Fatal error (return code 2)")
-                return None
-            elif ret_code == 7:
-                # Command-line error
-                logger.info("7-Zip: Command-line error (return code 7)\n%s"
-                            % e.cmd)
-                return None
-            elif ret_code == 8:
-                # Not enough memory for operation
-                logger.info("7-Zip: Not enough memory for operation (return code 8)")
-                return None
-            elif ret_code == 255:
-                # User stopped the process
-                logger.info("7-Zip: User stopped the process (return code 255)")
-                return None
+    archive_list = []
+    cur_arch_suffix = 1
 
+    try:
+        while files:
+            archive_file_path = "{0}.{1:08d}.tar.gz".format(os.path.join(tmpdir, subdir), cur_arch_suffix)
+            logger.info("Archiving %s to %s" % (subdir, archive_file_path))
 
-def upload_archive(archive_path, subdir_rel, aws_vault, archive_treehash, aws_account_id, dummy=False):
-    logger.info("Uploading {0} to vault {1}".format(archive_path, aws_vault))
+            with tarfile.open(archive_file_path, "w:gz") as arch_tar:
+                for i in xrange(0, int(args.max_files)):
+                    try:
+                        f = files.pop()
+                        logger.debug(
+                            "Adding {0} to archive {1} ({2}/{3})".format(f, archive_file_path, i + 1, args.max_files))
+                        arch_tar.add(f, os.path.basename(f))
+                    except IndexError, e:
+                        # Run out of files, exit loop
+                        logger.info("Completed adding files to archive")
+                        break
 
-    if not dummy:
-        try:
-            with open(archive_path, 'rb') as body:
-                aws_params = boto_client.upload_archive(vaultName=aws_vault,
-                                                        accountId=aws_account_id,
-                                                        archiveDescription=subdir_rel,
-                                                        body=body)
+            archive_list.append(archive_file_path)
+            cur_arch_suffix += 1
 
-                # Returned fields from upload:
-                # location -> (string)
-                # The relative URI path of the newly added archive resource.
-                # checksum -> (string)
-                # The checksum of the archive computed by Amazon Glacier.
-                # archiveId -> (string)
-                # The ID of the archive. This value is also included as part of the location.
+        return archive_list
 
-        except botocore.exceptions.ChecksumError:
-            logger.error("Upload failed - AWS checksum does not match local checksum")
-            return None
-
-        except botocore.exceptions.ConnectionClosedError:
-            logger.error("Upload failed - connection to AWS server was unexpectedly closed")
-            return None
-
-        except botocore.exceptions.EndpointConnectionError:
-            logger.error("Upload failed - unable to connect to AWS server")
-            return None
-
-        except botocore.exceptions.BotoCoreError, e:
-            logger.error("Upload failed - {0}".format(e.message))
-            return None
-
-        except:
-            logger.error("Upload failed - unknown error!")
-            return None
-
-    else:
-        # This is a dummy upload, for testing purposes. Create a fake
-        # AWS URI and location, but don't touch the archive.
-        logger.info("Dummy upload - not actually uploading archive!")
-
-        arch_id = "{0}-hcrbackup-{1}".format(aws_vault, time.time())
-
-        aws_params = {"archiveId": arch_id,
-                      "location": "aws://dummy-uri-{0}".format(arch_id),
-                      "checksum": archive_treehash
-                      }
-
-    logger.info("Uploaded archive {archpath} \n \
-                  Returned fields: \n \
-                  \tlocation: {params[location]} \n \
-                  \tchecksum: {params[checksum]} \n \
-                  \tarchiveId: {params[archiveId]}".format(archpath=archive_path,
-                                                           params=aws_params))
-    return aws_params
+    except Exception, e:
+        logging.error("Failed to create archive: {0}".format(e.message))
+        logging.debug("Error args: {0}".format(e.args))
+        return None
 
 
 def delete_aws_archive(archive_id, aws_vault):
@@ -333,6 +276,9 @@ if __name__ == "__main__":
             logger.error("New vault name not supplied. Cannot create vault.")
         exit()
 
+    if args.temp_dir:
+        tempfile.tempdir = args.temp_dir
+
     # If we're retrieving existing backups...
     elif args.subparser_name == "retrieve":
         if args.list_uploaded_archives:
@@ -364,83 +310,75 @@ if __name__ == "__main__":
 
         subdirs_to_backup = list_dirs(root_dir)  # List of subtrees, relative to root_dir
         subdirs_to_backup.append(
-            "")  # TODO-archiveroot: #4 Dammit I will get this working - get the root directory contents to be zipped
+            "")  # TODO-archiveroot: #4 Dammit I will get this working - get the root directory contents to be tarred
+
+        upload_mgr = cupocore.uploadmanager.UploadManager(db, boto_client, aws_vault_name)
 
         for subdir_to_backup in subdirs_to_backup:
+            # Archive each folder in the list to it's own (series of) tar file(s)
+            tmp_archive_fullpath_list = archive_directory(root_dir, subdir_to_backup, temp_dir)
 
-            # Archive each folder in the list to it's own ZIP file
-            tmp_archive_fullpath = archive_directory(root_dir, subdir_to_backup, temp_dir)
-            if not tmp_archive_fullpath:
+            if not tmp_archive_fullpath_list:
                 # Directory was empty - not being archived
                 continue
+            for tmp_archive_fullpath in tmp_archive_fullpath_list:
 
-            # Calculate the treehash of the local archive
-            with open(tmp_archive_fullpath, 'rb') as arch_f:
-                # archive_hash = calculate_tree_hash(arch_f)
-                archive_hash = botocore.utils.calculate_tree_hash(arch_f)
+                backup_subdir_abs_filename = os.path.join(root_dir, subdir_to_backup,
+                                                          os.path.basename(tmp_archive_fullpath))
+                backup_subdir_rel_filename = os.path.join(subdir_to_backup, os.path.basename(tmp_archive_fullpath))
+                # Calculate the treehash of the local archive
+                with open(tmp_archive_fullpath, 'rb') as arch_f:
+                    # archive_hash = calculate_tree_hash(arch_f)
+                    archive_hash = botocore.utils.calculate_tree_hash(arch_f)
 
-            backup_subdir_abs_filename = os.path.join(root_dir, subdir_to_backup) + ".7z"
-            backup_subdir_rel_filename = subdir_to_backup + ".7z"
+                # Find most recent version of this file in Glacier
+                most_recent_version = cupocore.mongoops.get_most_recent_version_of_archive(db, aws_vault_name,
+                                                                                           backup_subdir_rel_filename)
 
-            # Find most recent version of this file in Glacier
-            most_recent_version = cupocore.mongoops.get_most_recent_version_of_archive(db, aws_vault_name,
-                                                                                       backup_subdir_rel_filename)
+                if most_recent_version:
+                    logger.info("Archive for this path exists in local database")
+                    hash_remote = most_recent_version['treehash']
+                    size_remote = most_recent_version['size']
 
-            if most_recent_version:
-                logger.info("Archive for this path exists in local database")
-                hash_remote = most_recent_version['treehash']
-                size_remote = most_recent_version['size']
-
-            else:
-                logger.info("No archive found for this path in local database")
-                hash_remote = size_remote = None
-
-            # Compare it against the local copy of the Glacier version of the archive
-            size_arch = os.stat(tmp_archive_fullpath).st_size
-
-            # If the hashes are the same - don't upload the archive; it already exists
-            if not compare_files(size_arch, archive_hash, size_remote, hash_remote):
-                # Otherwise, upload the archive
-                upload_status = upload_archive(tmp_archive_fullpath, backup_subdir_rel_filename, aws_vault_name,
-                                               archive_hash, args.account_id,
-                                               args.dummy_upload)
-                if upload_status:
-                    # Get vault arn:
-                    aws_vault_arn = cupocore.mongoops.get_vault_by_name(db, aws_vault_name)["arn"]
-
-                    # Store the info about the newly uploaded file in the database
-                    cupocore.mongoops.create_archive_entry(db,
-                                                           backup_subdir_rel_filename,
-                                                           aws_vault_arn,
-                                                           upload_status["archiveId"],
-                                                           archive_hash,
-                                                           size_arch,
-                                                           upload_status["location"])
                 else:
-                    logger.info("Failed to upload {0}".format(backup_subdir_rel_filename))
-            else:
-                logger.info("Skipped uploading {0} - archive has not changed".format(
-                    backup_subdir_rel_filename))
+                    logger.info("No archive found for this path in local database")
+                    hash_remote = size_remote = None
 
-            # Delete the temporary archive
-            logger.info("Removing temporary archive")
-            os.remove(tmp_archive_fullpath)
+                # Compare it against the local copy of the Glacier version of the archive
+                size_arch = os.path.getsize(tmp_archive_fullpath)
 
-            # Find archives older than three months, with three more recent versions
-            # available
-            # This could only be the case when we've uploaded a new version of an archive, thereby
-            # making an old version irrelevant - so we only need to look for archives with this path.
-            if not args.no_prune:
-                old_archives = cupocore.mongoops.get_old_archives(db, backup_subdir_rel_filename, aws_vault_name)
-                for arch in old_archives:
-                    logger.info("Marking archive with ID {0} as redundant".format(arch["_id"]))
-                    cupocore.mongoops.mark_archive_for_deletion(db, arch["_id"])
-            else:
-                logger.info("Not marking old versions")
+                # If the hashes are the same - don't upload the archive; it already exists
+                if not compare_files(size_arch, archive_hash, size_remote, hash_remote):
+                    logger.info("Uploading {0} to vault {1}".format(tmp_archive_fullpath, aws_vault_name))
+                    if not args.dummy_upload:
+                        upload_mgr.initialize_upload(tmp_archive_fullpath, os.path.dirname(backup_subdir_rel_filename),
+                                                     archive_hash, size_arch)
+                    else:
+                        # This is a dummy upload, for testing purposes. Create a fake
+                        # AWS URI and location, but don't touch the archive.
+                        logger.info("Dummy upload - not actually uploading archive!")
+
+                else:
+                    logger.info("Skipped uploading {0} - archive has not changed".format(
+                        backup_subdir_rel_filename))
+
+                # Find archives older than three months, with three more recent versions
+                # available
+                # This could only be the case when we've uploaded a new version of an archive, thereby
+                # making an old version irrelevant - so we only need to look for archives with this path.
+                if not args.no_prune:
+                    old_archives = cupocore.mongoops.get_old_archives(db, backup_subdir_rel_filename, aws_vault_name)
+                    for arch in old_archives:
+                        logger.info("Marking archive with ID {0} as redundant".format(arch["_id"]))
+                        cupocore.mongoops.mark_archive_for_deletion(db, arch["_id"])
+                else:
+                    logger.info("Not marking old versions")
+        # Wait for uploads to complete
+        upload_mgr.wait_for_finish()
 
         # Delete the temporary directory.
         logger.info("Removing temporary working folder")
-        os.rmdir(temp_dir)
+        shutil.rmtree(temp_dir)
 
     else:
         logger.info("Skipping file backup - '--no-backup' supplied.")
