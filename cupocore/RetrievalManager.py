@@ -5,6 +5,8 @@ import tempfile
 import mongoops
 import botocore.utils
 import subprocess
+import zipfile
+from time import sleep
 
 
 class RetrievalManager():
@@ -77,6 +79,7 @@ class RetrievalManager():
             if not status:
                 self.logger.info("Job {0} is not ready.".format(job_entry["_id"]))
                 mongoops.update_job_last_polled_time(self.db, job_entry["_id"])
+                sleep(2)
                 continue
 
             self.logger.info("Job {0} is ready - commencing download".format(job_entry["_id"]))
@@ -85,9 +88,9 @@ class RetrievalManager():
             local_arch_fullpath = self.download_archive(job_entry)
             if local_arch_fullpath:
                 # And unzip it
-                self.dearchive_file(local_arch_fullpath)
+                self.dearchive_file(local_arch_fullpath, job_entry["job_retrieval_destination"])
 
-                # Delete the 7z file
+                # Delete the zip file
                 self.logger.info("Removing archive {0}".format(local_arch_fullpath))
                 os.remove(local_arch_fullpath)
 
@@ -131,7 +134,7 @@ class RetrievalManager():
 
         # Now that we have all of the files, join them together
         download_dir = job_entry["job_retrieval_destination"]
-        download_relpath = archive_entry["archive_dir_path"]
+        download_relpath = archive_entry["path"]
         download_fullpath = os.path.join(download_dir, download_relpath)
 
         try:
@@ -151,7 +154,6 @@ class RetrievalManager():
         self.logger.info("Removing temp dir at{0}".format(tmp_dir))
         os.rmdir(tmp_dir)
 
-
         # Make sure that local treehash matches original upload treehash
         with open(download_fullpath, "rb"):
             local_hash = botocore.utils.calculate_tree_hash(download_fullpath)
@@ -163,36 +165,23 @@ class RetrievalManager():
         return False
         # TODO: Reschedule job?
 
-    def dearchive_file(self, archive_path):
+    def dearchive_file(self, archive_path, extract_path):
         """
         Unzips contents of named archive to directory at 'archive_path/archive_name'
         :param archive_path: Absolute path to archive to unzip
         """
 
         try:
-            subprocess.check_call(["7z", "x", archive_path, "-o{0}".format(os.path.splitext(archive_path[0]))])
+            # subprocess.check_call(["7z", "x", archive_path, "-o{0}".format(os.path.splitext(archive_path[0]))])
+            # return True
+
+            zf = zipfile.ZipFile(open(archive_path, "rb"), "r", allowZip64=True)
+            self.logger.info("Extracting files from {0} to {1}".format(archive_path, extract_path))
+            zf.extractall(extract_path)
+            zf.close()
             return True
-        except subprocess.CalledProcessError, e:
-            ret_code = e.returncode
-            if ret_code == 1:
-                # Warning (Non fatal error(s)). For example, one or more files were locked by some
-                # other application, so they were not compressed.
-                self.logger.info("7-Zip: Non-fatal error (return code 1)")
-                return None
-            elif ret_code == 2:
-                # Fatal error
-                self.logger.info("7-Zip: Fatal error (return code 2)")
-                return None
-            elif ret_code == 7:
-                # Command-line error
-                self.logger.info("7-Zip: Command-line error (return code 7)\n%s"
-                                 % e.cmd)
-                return None
-            elif ret_code == 8:
-                # Not enough memory for operation
-                self.logger.info("7-Zip: Not enough memory for operation (return code 8)")
-                return None
-            elif ret_code == 255:
-                # User stopped the process
-                self.logger.info("7-Zip: User stopped the process (return code 255)")
-                return None
+
+        except zipfile.BadZipfile, e:
+            self.logger.error("Bad Zip File error: {0}", e.message)
+            self.logger.debug(e.args)
+            return False

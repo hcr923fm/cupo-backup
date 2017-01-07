@@ -291,7 +291,8 @@ if __name__ == "__main__":
 
             if len(archive_list):
                 for arch in archive_list:
-                    init_job_retrieval(db, args.vault_name, arch["_id"], args.download_location)
+                    init_job_retrieval(db, args.vault_name, arch["_id"], os.path.join(args.download_location, os.path.dirname(arch("path"))
+                                                                                      ))
             logger.critical("This hasn't been implemented yet D: - TODO: INITIATE JOB RETRIEVAL")
 
     # Top of directory to backup
