@@ -58,23 +58,27 @@ def create_backup_database(database_name, db_client, drop_existing=True):
 
     except pymongo.errors.ConnectionFailure, e:
         logger.error("Database creation failed - lost connection to MongoDB instance")
+        return None
     except pymongo.errors.ExecutionTimeout, e:
         logger.error("Database creation failed - operation execution timed out")
+        return None
     except pymongo.errors.WriteError, e:
         logger.error("Database creation failed - could not write to database")
+        return None
     except pymongo.errors.PyMongoError, e:
         logger.error("Database creation failed - MongoDB error '{0}'".format(e.message))
+        return None
     except Exception, e:
         logger.error("Database creation failed - '{0}'".format(e.message))
-    finally:
         return None
-
 
 def create_vault_entry(db, vault_arn, vault_name):
     # Check first to see if there's already a vault by this name.
     existing_vault_entry = db["vaults"].find_one({"name": vault_name})
     # If so, return that instead.
     if existing_vault_entry: return existing_vault_entry["_id"]
+
+    logger.info("Creating new vault in DB")
 
     # If not, let's create one with the specified info...
     doc_vault = {}
