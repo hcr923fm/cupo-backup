@@ -2,8 +2,10 @@ import logging
 import os
 import threading
 import tempfile
+from idlelib import IOBinding
+
 import mongoops
-import botocore.utils
+import botocore.utils, botocore.exceptions
 import subprocess
 import zipfile
 from time import sleep
@@ -95,6 +97,28 @@ class RetrievalManager():
                 os.remove(local_arch_fullpath)
 
     def download_archive(self, job_entry):
+        """Downloads the archive associated with `job_entry`.
+
+         Retrieves, in 16MB chunks, the AWS archive associated with the
+         database entry `job_entry`, before concatenating the chunks into one
+         archive and verifying the archive integrity by calcuating the treehash
+         of the archive and comparing it against the treehash of the originally
+         uploaded archive.
+
+         Args:
+             job_entry: The MongoDB entry describing the retrieval job currently
+                being operated on.
+
+        Returns:
+            If download, concatenation and verification are successful, return
+            the absolute path to the downloaded archive. Otherwise, return
+            None.
+
+        Raises:
+            botocore.exceptions.ChecksumError: The downloaded archives'
+                checksum did not match that of the originally uploaded archive;
+                verification failed.
+        """
         archive_entry = mongoops.get_archive_by_id(self.db, job_entry["archive_id"])
         tmp_dir = tempfile.mkdtemp()
 
@@ -127,7 +151,7 @@ class RetrievalManager():
                     "Getting job output for job {0} returned non-successful HTTP code: {1}".format(job_entry["_id"],
                                                                                                    response["status"]))
                 # TODO: Cleanup temp files, reschedule get_job_output
-                continue
+                return None
 
         # We should delete the retrieval job, now that we have the data
         mongoops.delete_retrieval_entry(self.db, job_entry["_id"])
@@ -144,6 +168,8 @@ class RetrievalManager():
             pass
 
         # Join the chunks together
+        # TODO: Split this into separate function, so it can easily be rescheduled?
+
         self.logger.info("Concatenating chunks to into archive at {0}".format(download_fullpath))
         with open(download_fullpath, "ab") as f_dest:
             for tmp_chunk_path in chunk_files:
@@ -161,14 +187,24 @@ class RetrievalManager():
                 return download_fullpath
             else:
                 logging.error("Downloaded archive treehash does not match original treehash!")
+                raise botocore.exceptions.ChecksumError(checksum_type="SHA256 treehash",
+                                                  expected_checksum=archive_entry["treehash"],
+                                                  actual_checksum=local_hash)
 
-        return False
+        return None
         # TODO: Reschedule job?
 
     def dearchive_file(self, archive_path, extract_path):
-        """
-        Unzips contents of named archive to directory at 'archive_path/archive_name'
-        :param archive_path: Absolute path to archive to unzip
+        """Unzips contents of named archive to named directory.
+
+        Args:
+            archive_path: Absolute path to .zip archive file to unzip.
+            extract_path: Absolute path to directory to extract contents of `archive_path` to.
+
+        Returns:
+            Boolean identifying success - True if archive operation was successful, False otherwise.
+            BadZipFile is such a generic exception that identifying why a file may have failed to unzip is a somewhat
+            tricky task.
         """
 
         try:
