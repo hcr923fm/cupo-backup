@@ -12,7 +12,27 @@ from time import sleep
 
 
 class RetrievalManager():
+    """A class that oversees the process of downloading archives from Glacier.
+
+    Attributes:
+        check_for_jobs: A threading.Event that is used to signal to the worker
+            threads whether or not to check for further jobs. Allows the thread
+            to join while there are still jobs to check.
+        retrieval_thread: The thread that we use to run over the jobs in the
+            background.
+    """
     def __init__(self, db, client, vault_name):
+        """Create a new RetrievalManager.
+
+        Creates a RetrievalManager, acquires logging and database interface
+        capabilities, and sets up threading so as to retrieve job items.
+
+        Args:
+            db: The MongoDB instance that cupo is using.
+            client: The AWS client that cupo is using to interface with
+                Glacier.
+            vault_name: The name of the vault to retrieve archives from.
+        """
         self.client = client
         self.db = db
         self.logger = logging.getLogger("cupobackup{0}.RetrievalManager".format(os.getpid()))
@@ -20,9 +40,26 @@ class RetrievalManager():
 
         self.check_for_jobs = threading.Event()
         self.check_for_jobs.set()
+
+        # TODO: Set up a pool of threads to be regenerated, similar to the pool in UploadManager.
         self.retrieval_thread = threading.Thread(target=self.thread_worker)
 
     def initiate_retrieval(self, archive_id, download_location):
+        """Begins the process of retrieving an archive from AWS.
+
+        Initiates a job on Glacier with the archive ID and then creates an
+        entry in MongoDB with the job details, ready for further processing
+        when the job is complete.
+
+        Args:
+            archive_id: The Glacier ID for the archive to retrieve.
+            download_location: The directory to download the contents of the
+                archive to.
+
+        Returns:
+            Boolean indicating whether or not the job initiation process was
+            successful.
+        """
         job_params = {
             "Format": "JSON",
             "Type": "archive-retrieval",
@@ -39,12 +76,27 @@ class RetrievalManager():
                                             init_job_ret["jobId"],
                                             init_job_ret["location"],
                                             download_location)
+        else:
+            self.logger.error("Unable to create the job on AWS!")
+            return False
 
         if not self.check_for_jobs.isSet(): self.check_for_jobs.set()
         self.retrieval_thread.start()
         return True
 
     def check_job_status(self, job_id):
+        """See whether an archive has been made available for download from AWS.
+
+        Runs a describe_job operation against the AWS job with a given ID and
+        checks the output.
+
+        Args:
+            job_id: The AWS job ID representing the job to operate on.
+
+        Returns:
+            Boolean indicating whether or not the jobs' contents (i.e. an
+            archive) is available for download.
+        """
         response = self.client.describe_job(vaultName=self.vault_name,
                                             jobId=job_id)
 
@@ -186,10 +238,11 @@ class RetrievalManager():
             if archive_entry["treehash"] == local_hash:
                 return download_fullpath
             else:
-                logging.error("Downloaded archive treehash does not match original treehash!")
+                self.logger.error("Downloaded archive treehash does not match original treehash!")
                 raise botocore.exceptions.ChecksumError(checksum_type="SHA256 treehash",
-                                                  expected_checksum=archive_entry["treehash"],
-                                                  actual_checksum=local_hash)
+                                                        expected_checksum=archive_entry["treehash"],
+                                                        actual_checksum=local_hash)
+                # TODO: Delete temp archive?
 
         return None
         # TODO: Reschedule job?
