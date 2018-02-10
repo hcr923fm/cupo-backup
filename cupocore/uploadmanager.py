@@ -22,6 +22,7 @@ class UploadManager():
             response = self.client.initiate_multipart_upload(vaultName=self.vault_name,
                                                              archiveDescription=subdir_rel_path,
                                                              partSize=str(self.chunk_size))
+            print "Successfully created upload job for archive {0}".format(subdir_rel_path)
 
         except Exception, e:
             self.logger.error("Failed to init multipart upload!")
