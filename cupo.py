@@ -368,6 +368,8 @@ if __name__ == "__main__":
                 if not compare_files(size_arch, archive_hash, size_remote, hash_remote):
                     logger.info("Uploading {0} to vault {1}".format(tmp_archive_fullpath, aws_vault_name))
                     if not args.dummy_upload:
+                        print "tmp_archive_fullpath: {0} \
+                        os.path.dirname: {1}".format(tmp_archive_fullpath, os.path.dirname(backup_subdir_rel_filename))
                         upload_mgr.initialize_upload(tmp_archive_fullpath, os.path.dirname(backup_subdir_rel_filename),
                                                      archive_hash, size_arch)
                     else:
